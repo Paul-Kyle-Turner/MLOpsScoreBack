@@ -1,10 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, BigInteger, String, Boolean, Numeric, DateTime, Text, ARRAY, JSON
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Numeric, DateTime, ARRAY, JSON
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy import ForeignKey
 from datetime import datetime
-from typing import List, Optional, Dict, Any
 
 Base = declarative_base()
 
