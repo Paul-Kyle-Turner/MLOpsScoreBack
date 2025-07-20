@@ -8,11 +8,12 @@ class Settings(BaseSettings):
     version: str = "1.0.0"
 
     # NEON database settings
-    pg_user: str = "read_only"
-    pg_password: str | None = None
-    pg_database: str = "neondb"
-    pg_host: str = "ep-shiny-shadow-adqt5nle-pooler.c-2.us-east-1.aws.neon.tech"
-    pg_port: int = 5432
+    # pg_user: str = "read_only"
+    # pg_password: str | None = None
+    # pg_database: str = "neondb"
+    # pg_host: str = "ep-shiny-shadow-adqt5nle-pooler.c-2.us-east-1.aws.neon.tech"
+    # pg_port: int = 5432
+    pg_connection_string: str
 
     # Slack oauth settings
     slack_oauth_bot_token: str

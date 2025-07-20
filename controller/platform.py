@@ -33,7 +33,7 @@ class MLOpsPlatformController:
         """Initialize the controller with database connection."""
         self.engine = create_engine(database_url)
         Base.metadata.create_all(self.engine)
-        self.SessionLocal = sessionmaker(
+        self.session_local = sessionmaker(
             autocommit=False,
             autoflush=False,
             bind=self.engine
@@ -41,7 +41,7 @@ class MLOpsPlatformController:
 
     def get_session(self) -> Session:
         """Get a database session."""
-        return self.SessionLocal()
+        return self.session_local()
 
     # Platform Information CRUD operations
     def create_platform(self, platform_data: PlatformInformationModel) -> PlatformInformationModel:
@@ -222,6 +222,14 @@ class MLOpsPlatformController:
             return [PlatformInformationModel.model_validate(platform) for platform in session.query(PlatformInformation).join(ComputeInstance).filter(
                 ComputeInstance.gpu_count > 0
             ).distinct().all()]
+
+    def paginate_platforms(self, page: int = 1, page_size: int = 10) -> List[PlatformInformationModel]:
+        """Paginate platforms."""
+        with self.get_session() as session:
+            offset = (page - 1) * page_size
+            return [
+                PlatformInformationModel.model_validate(platform) for platform in session.query(PlatformInformation).offset(offset).limit(page_size).all()
+            ]
 
     def close(self) -> None:
         """Close the database connection."""
