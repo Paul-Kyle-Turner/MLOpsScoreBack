@@ -8,11 +8,26 @@ class Settings(BaseSettings):
     version: str = "1.0.0"
 
     # NEON database settings
-    PG_USER: str = "read_only"
-    PG_PASSWORD: str = "npg_3FvhUJIxjk4D"
-    PG_DATABASE: str = "neondb"
-    PG_HOST: str = "ep-shiny-shadow-adqt5nle-pooler.c-2.us-east-1.aws.neon.tech"
-    PG_PORT: int = 5432
+    pg_user: str = "read_only"
+    pg_password: str
+    pg_database: str = "neondb"
+    pg_host: str = "ep-shiny-shadow-adqt5nle-pooler.c-2.us-east-1.aws.neon.tech"
+    pg_port: int = 5432
+
+    # Slack oauth settings
+    slack_oauth_bot_token: str
+    slack_oauth_user_token: str
+
+    # Slack tokens
+    slack_app_id: str
+    slack_client_id: str
+    slack_client_secret: str
+    slack_signing_secret: str
+    slack_verification_token: str
+
+    # Slack ids
+    slack_team_id: str = "T7FHA770F"
+    slack_team_name: str
 
 
-SETTINGS = Settings()
+SETTINGS = Settings()  # type: ignore

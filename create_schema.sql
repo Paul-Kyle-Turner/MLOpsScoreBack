@@ -80,6 +80,7 @@ create table if not exists mlops_score.security_features (
 
 create table if not exists mlops_score.platform_information (
 	id bigint generated always as identity primary key,
+	platform_name varchar(512) not null,
 	platform_type platform_types,
 	parent_company varchar(512),
 	founded_date timestamp with time zone,

@@ -12,6 +12,7 @@ pydantic = "^2.11.7"
 pydantic-settings = "^2.10.1"
 psycopg2 = "^2.9.10"
 sqlalchemy = "^2.0.41"
+slack-sdk = "^3.36.0"
 
 
 [tool.poetry.group.dev.dependencies]
