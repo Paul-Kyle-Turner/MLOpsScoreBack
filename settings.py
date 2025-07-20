@@ -1,5 +1,5 @@
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # NEON database settings
     pg_user: str = "read_only"
-    pg_password: str
+    pg_password: str | None = None
     pg_database: str = "neondb"
     pg_host: str = "ep-shiny-shadow-adqt5nle-pooler.c-2.us-east-1.aws.neon.tech"
     pg_port: int = 5432
@@ -27,7 +27,12 @@ class Settings(BaseSettings):
 
     # Slack ids
     slack_team_id: str = "T7FHA770F"
-    slack_team_name: str
+    slack_team_name: str = "MyselfInc"
+
+    model_config = SettingsConfigDict(
+        env_file='.env',
+        extra='ignore'
+    )
 
 
 SETTINGS = Settings()  # type: ignore

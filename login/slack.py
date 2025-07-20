@@ -3,13 +3,25 @@ from typing import Annotated
 
 from fastapi import Header
 
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel
 
 from slack_sdk import WebClient
 
 from settings import SETTINGS
 
 client = WebClient(token=SETTINGS.slack_oauth_bot_token)
+
+
+class AuthenticationHeader(BaseModel):
+    slack_code: str | None = Header(
+        default=None,
+        validation_alias=AliasChoices(
+            "X-Slack-Code",
+            "x-slack-code",
+            "slack_code",
+            "slack-code",
+        )  # type: ignore
+    )
 
 
 class SlackAuthenticationResponse(BaseModel):
@@ -19,20 +31,24 @@ class SlackAuthenticationResponse(BaseModel):
     user: str | None = None
     team_id: str | None = None
     user_id: str | None = None
+    code: str | None = None
 
 
-async def slack_code(
-        slack_code: Annotated[str | None, Header()]
+async def verify_slack_code(
+        slack_header: Annotated[AuthenticationHeader, Header()]
 ) -> bool:
 
-    response = SlackAuthenticationResponse.model_validate(
-        client.auth_test(token=slack_code)
-    )
-
-    if SETTINGS.slack_team_id and SETTINGS.slack_team_id != response.team_id:
+    if not slack_header.slack_code:
         return False
 
-    if SETTINGS.slack_team_name and SETTINGS.slack_team_name != response.team:
-        return False
+    print(slack_header.slack_code)
+
+    response = client.oauth_v2_access(
+        client_id=SETTINGS.slack_client_id,
+        client_secret=SETTINGS.slack_client_secret,
+        code=slack_header.slack_code
+    ),
+
+    print(response)
 
     return True
