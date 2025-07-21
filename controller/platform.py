@@ -2,8 +2,9 @@ from datetime import datetime
 import logging
 from typing import List, Optional, Dict, Any
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.exc import SQLAlchemyError, DisconnectionError
 
 
 from sql_model.platforms import (
@@ -43,11 +44,30 @@ class MLOpsPlatformController:
         """Get a database session."""
         return self.session_local()
 
+    def _check_session_health(self, session: Session) -> bool:
+        """Check if the database session is healthy."""
+        try:
+            # Simple query to test connection
+            session.execute(text("SELECT 1"))
+            return True
+        except (SQLAlchemyError, DisconnectionError) as e:
+            logger.error(f"Session health check failed: {e}")
+            return False
+
+    def _ensure_healthy_session(self, session: Session) -> Session:
+        """Ensure we have a healthy session, create new one if needed."""
+        if not self._check_session_health(session):
+            logger.warning("Session is unhealthy, creating new session")
+            session.close()
+            return self.get_session()
+        return session
+
     # Platform Information CRUD operations
     def create_platform(self, platform_data: PlatformInformationModel) -> PlatformInformationModel:
         """Create a new platform."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 platform = PlatformInformation(**platform_data.model_dump())
                 session.add(platform)
                 session.commit()
@@ -62,22 +82,27 @@ class MLOpsPlatformController:
     def get_platform(self, platform_id: int) -> Optional[PlatformInformationModel]:
         """Get a platform by ID."""
         with self.get_session() as session:
-            return PlatformInformationModel.model_validate(
-                session.query(PlatformInformation).filter(
-                    PlatformInformation.id == platform_id).first()
-            )
+            session = self._ensure_healthy_session(session)
+            platform = session.query(PlatformInformation).filter(
+                PlatformInformation.id == platform_id).first()
+            if platform:
+                return PlatformInformationModel.model_validate(platform)
+            return None
 
     def get_platform_by_name(self, platform_name: str) -> Optional[PlatformInformationModel]:
         """Get a platform by name."""
         with self.get_session() as session:
-            return PlatformInformationModel.model_validate(
-                session.query(PlatformInformation).filter(
-                    PlatformInformation.platform_name == platform_name).first()
-            )
+            session = self._ensure_healthy_session(session)
+            platform = session.query(PlatformInformation).filter(
+                PlatformInformation.platform_name == platform_name).first()
+            if platform:
+                return PlatformInformationModel.model_validate(platform)
+            return None
 
     def get_all_platforms(self, limit: int = 100, offset: int = 0) -> List[PlatformInformationModel]:
         """Get all platforms with pagination."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             return [
                 PlatformInformationModel.model_validate(platform) for platform in session.query(PlatformInformation).offset(offset).limit(limit).all()
             ]
@@ -86,6 +111,7 @@ class MLOpsPlatformController:
         """Update a platform."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 platform: Optional[PlatformInformation] = session.query(
                     PlatformInformation).filter(PlatformInformation.id == platform_id).first()
                 if platform:
@@ -95,7 +121,8 @@ class MLOpsPlatformController:
                     session.commit()
                     session.refresh(platform)
                     logger.info(f"Updated platform with ID: {platform_id}")
-                return PlatformInformationModel.model_validate(platform)
+                    return PlatformInformationModel.model_validate(platform)
+                return None
             except Exception as e:
                 session.rollback()
                 logger.error(f"Error updating platform: {e}")
@@ -105,6 +132,7 @@ class MLOpsPlatformController:
         """Delete a platform."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 platform = session.query(PlatformInformation).filter(
                     PlatformInformation.id == platform_id).first()
                 if platform:
@@ -123,6 +151,7 @@ class MLOpsPlatformController:
         """Create a new compute instance."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 instance = ComputeInstance(**instance_data.model_dump())
                 session.add(instance)
                 session.commit()
@@ -137,6 +166,7 @@ class MLOpsPlatformController:
     def get_compute_instances_by_platform(self, platform_id: int) -> List[ComputeInstanceModel]:
         """Get all compute instances for a platform."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             return [ComputeInstanceModel.model_validate(instance) for instance in session.query(ComputeInstance).filter(ComputeInstance.platform_id == platform_id).all()]
 
     # Geographic Regions operations
@@ -144,6 +174,7 @@ class MLOpsPlatformController:
         """Create a new geographic region."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 region = GeographicRegions(**region_data.model_dump())
                 session.add(region)
                 session.commit()
@@ -158,6 +189,7 @@ class MLOpsPlatformController:
     def get_regions_by_platform(self, platform_id: int) -> List[GeographicRegionModel]:
         """Get all regions for a platform."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             return [GeographicRegionModel.model_validate(region) for region in session.query(GeographicRegions).filter(GeographicRegions.platform_id == platform_id).all()]
 
     # Network Capabilities operations
@@ -165,13 +197,14 @@ class MLOpsPlatformController:
         """Create network capabilities."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 network = NetworkCapabilities(**network_data.model_dump())
                 session.add(network)
                 session.commit()
                 session.refresh(network)
                 logger.info(
                     f"Created network capabilities with ID: {network.id}")
-                return network
+                return NetworkingCapabilitiesModel.model_validate(network)
             except Exception as e:
                 session.rollback()
                 logger.error(f"Error creating network capabilities: {e}")
@@ -182,6 +215,7 @@ class MLOpsPlatformController:
         """Create security features."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 security = SecurityFeatures(**security_data.model_dump())
                 session.add(security)
                 session.commit()
@@ -197,6 +231,7 @@ class MLOpsPlatformController:
     def search_platforms_by_name(self, name: str) -> List[PlatformInformationModel]:
         """Search platforms by name."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             return [PlatformInformationModel.model_validate(platform) for platform in session.query(PlatformInformation).filter(
                 PlatformInformation.platform_name.ilike(f"%{name}%")
             ).all()]
@@ -205,6 +240,7 @@ class MLOpsPlatformController:
     def search_platforms_by_type(self, platform_type: str) -> List[PlatformInformationModel]:
         """Search platforms by type."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             return [PlatformInformationModel.model_validate(platform) for platform in session.query(PlatformInformation).filter(
                 PlatformInformation.platform_type == platform_type
             ).all()]
@@ -212,6 +248,7 @@ class MLOpsPlatformController:
     def search_platforms_by_company(self, company_name: str) -> List[PlatformInformationModel]:
         """Search platforms by parent company."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             return [PlatformInformationModel.model_validate(platform) for platform in session.query(PlatformInformation).filter(
                 PlatformInformation.parent_company.ilike(f"%{company_name}%")
             ).all()]
@@ -219,6 +256,7 @@ class MLOpsPlatformController:
     def get_platforms_with_gpu_instances(self) -> List[PlatformInformationModel]:
         """Get platforms that have GPU compute instances."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             return [PlatformInformationModel.model_validate(platform) for platform in session.query(PlatformInformation).join(ComputeInstance).filter(
                 ComputeInstance.gpu_count > 0
             ).distinct().all()]
@@ -226,6 +264,7 @@ class MLOpsPlatformController:
     def paginate_platforms(self, page: int = 1, page_size: int = 10) -> List[PlatformInformationModel]:
         """Paginate platforms."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             offset = (page - 1) * page_size
             return [
                 PlatformInformationModel.model_validate(platform) for platform in session.query(PlatformInformation).offset(offset).limit(page_size).all()

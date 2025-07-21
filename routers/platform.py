@@ -8,6 +8,7 @@ from controller.platform import (
 
 from model.paginate import PaginateRequest
 from model.platform import PlatformInformation
+from model.search import SearchRequest
 from settings import SETTINGS
 
 router = APIRouter(prefix="/platform", tags=["platform", "platforms"])
@@ -28,12 +29,11 @@ async def get_platform(platform_name: str) -> PlatformInformation:
     return platform
 
 
-@router.get("/{search_query}", tags=["platforms", "search"], summary="Search platforms by name")
-async def search_platforms(search_query: str) -> List[PlatformInformation]:
-    platforms = controller.search_platforms_by_name(search_query)
+@router.post("/search", tags=["platforms", "search"], summary="Search platforms by name")
+async def search_platforms(search_query: SearchRequest) -> List[PlatformInformation]:
+    platforms = controller.search_platforms_by_name(search_query.search_query)
     if not platforms:
-        raise HTTPException(
-            status_code=404, detail="No platforms found matching the search query")
+        return []
     return platforms
 
 

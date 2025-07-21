@@ -1,17 +1,11 @@
 from sqlalchemy import Column, BigInteger, Integer, String, DateTime, ForeignKey, Enum, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func, text
-import enum
+from sqlalchemy.sql import func
+
+from sql_model.platforms import platform_types_enum
 
 Base = declarative_base()
-
-
-class PlatformTypes(enum.Enum):
-    # Add your platform types here based on the platforms.platform_types enum
-    CLOUD = "cloud"
-    ON_PREMISE = "on_premise"
-    HYBRID = "hybrid"
 
 
 class ComputeAndScaling(Base):
@@ -175,7 +169,7 @@ class PlatformEvaluation(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     # References platforms.platform_information(id)
     platform_id = Column(BigInteger, nullable=False)
-    platform_type = Column(Enum(PlatformTypes), nullable=False)
+    platform_type = Column(platform_types_enum, nullable=False)
     evaluation_date = Column(DateTime(timezone=True),
                              default=func.current_timestamp())
     evaluator_id = Column(String(64), nullable=True)
@@ -236,68 +230,68 @@ class PlatformScoresComprehensive(Base):
 
     evaluation_id = Column(BigInteger, primary_key=True)
     platform_id = Column(BigInteger)
-    platform_type = Column(Enum(PlatformTypes))
+    platform_type = Column(platform_types_enum)
     evaluation_date = Column(DateTime(timezone=True))
     evaluator_id = Column(String(64))
-    
+
     # Compute and Scaling scores
     compute_variety = Column(Integer)
     auto_scaling_score = Column(Integer)
     spot_instance_support = Column(Integer)
     distributed_training_support = Column(Integer)
-    
+
     # Data Management scores
     storage_options_score = Column(Integer)
     data_versioning_score = Column(Integer)
     data_pipeline_orchestration = Column(Integer)
     data_integration_score = Column(Integer)
-    
+
     # Model Development scores
     framework_support_score = Column(Integer)
     experiment_tracking_score = Column(Integer)
     hyperparameter_tuning_score = Column(Integer)
     notebook_environment_score = Column(Integer)
-    
+
     # MLOps Pipeline scores
     workflow_orchestration_score = Column(Integer)
     cicd_integration_score = Column(Integer)
     model_validation_score = Column(Integer)
     environment_management_score = Column(Integer)
-    
+
     # Model Deployment scores
     deployment_options_score = Column(Integer)
     real_time_inference_score = Column(Integer)
     batch_inference_score = Column(Integer)
     ab_testing_score = Column(Integer)
     canary_deployment_score = Column(Integer)
-    
+
     # Monitoring and Observability scores
     model_performance_monitoring = Column(Integer)
     data_drift_detection = Column(Integer)
     infrastructure_monitoring = Column(Integer)
     logging_and_alerting = Column(Integer)
     model_explainability = Column(Integer)
-    
+
     # Security and Compliance scores
     identity_access_management = Column(Integer)
     data_encryption = Column(Integer)
     compliance_certifications = Column(Integer)
     network_security = Column(Integer)
     audit_logging = Column(Integer)
-    
+
     # Cost Management scores
     cost_transparency = Column(Integer)
     resource_optimization = Column(Integer)
     pricing_flexibility = Column(Integer)
     cost_prediction_score = Column(Integer)
-    
+
     # Developer Experience scores
     api_sdk_quality = Column(Integer)
     tool_integration = Column(Integer)
     documentation_quality = Column(Integer)
     community_support = Column(Integer)
     migration_tools = Column(Integer)
-    
+
     # Performance and Reliability scores
     sla_score = Column(Integer)
     global_availability = Column(Integer)
