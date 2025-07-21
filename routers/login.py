@@ -18,7 +18,7 @@ from settings import SETTINGS
 
 authorization_url_generator = AuthorizeUrlGenerator(
     client_id=SETTINGS.slack_client_id,
-    redirect_uri="https://localhost:8000/v1/slack/oauth_redirect",
+    redirect_uri=SETTINGS.slack_oauth_redirect_url,
     scopes=[],
     user_scopes=["identity.basic"],
 )
