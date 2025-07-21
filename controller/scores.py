@@ -72,7 +72,7 @@ class MLOpsScoreController:
         return session
 
     # Platform Evaluation CRUD operations
-    def create_platform_evaluation(self, evaluation_data: MLOpsPlatformEvaluation) -> MLOpsPlatformEvaluation:
+    def create_platform_evaluation(self, platform_id: int, evaluation_data: MLOpsPlatformEvaluation) -> MLOpsPlatformEvaluation:
         """Create a complete platform evaluation with all scores."""
         with self.get_session() as session:
             try:
@@ -103,7 +103,7 @@ class MLOpsScoreController:
                 # Create the main evaluation record
                 evaluation = PlatformEvaluation(
                     platform_id=int(
-                        evaluation_data.platform_id) if evaluation_data.platform_id else None,
+                        evaluation_data.platform_id) if evaluation_data.platform_id else platform_id or None,
                     platform_type=evaluation_data.platform_type,
                     evaluation_date=evaluation_data.evaluation_date,
                     evaluator_id=evaluation_data.evaluator_id,
