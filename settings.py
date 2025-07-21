@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     slack_team_id: str = "T7FHA770F"
     slack_team_name: str = "MyselfInc"
 
+    slack_oauth_redirect_url: str = "https://localhost:8000/v1/slack/oauth_redirect"
+
     # Pinecone settings
     pinecone_api_key: str
     pinecone_index_hostname: str

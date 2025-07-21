@@ -86,7 +86,8 @@ async def get_evaluations_by_evaluator(evaluator_id: str) -> List[MLOpsPlatformE
 
 @router.get("/top-platforms", summary="Get top platforms by score")
 async def get_top_platforms(
-    limit: int = Query(10, ge=1, le=50, description="Number of top platforms to return")
+    limit: int = Query(
+        10, ge=1, le=50, description="Number of top platforms to return")
 ) -> List[Dict[str, Any]]:
     """Get top platforms ranked by their overall scores."""
     try:
@@ -110,22 +111,22 @@ async def get_evaluation(evaluation_id: int) -> MLOpsPlatformEvaluation:
             status_code=500, detail=f"Error retrieving evaluation: {str(e)}")
 
 
-@router.post("/", summary="Create a new platform evaluation")
-async def create_evaluation(evaluation: MLOpsPlatformEvaluation) -> MLOpsPlatformEvaluation:
+@router.post("/{platform_id}", summary="Create a new platform evaluation")
+async def create_evaluation(platform_id: int, evaluation: MLOpsPlatformEvaluation) -> MLOpsPlatformEvaluation:
     """Create a new platform evaluation with all scores."""
     try:
         # Set evaluation date if not provided
         if not evaluation.evaluation_date:
             evaluation.evaluation_date = datetime.now()
 
-        created_evaluation = controller.create_platform_evaluation(evaluation)
+        created_evaluation = controller.create_platform_evaluation(platform_id,evaluation)
         return created_evaluation
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error creating evaluation: {str(e)}")
 
 
-@router.post("/{evaluation_id}", summary="Update an existing evaluation")
+@router.post("/update/{evaluation_id}", summary="Update an existing evaluation")
 async def update_evaluation(
     evaluation_id: int,
     evaluation: MLOpsPlatformEvaluation

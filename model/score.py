@@ -7,8 +7,20 @@ from model.platform import PlatformType
 
 class ScoreRange(BaseModel):
     """Score range validation model"""
-    min_score: int = Field(default=1, ge=1, le=10)
-    max_score: int = Field(default=10, ge=1, le=10)
+    min_score: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+        validation_alias=AliasChoices("min_score", "minScore"),
+        serialization_alias="minScore"
+    )
+    max_score: int = Field(
+        default=10,
+        ge=1,
+        le=10,
+        validation_alias=AliasChoices("max_score", "maxScore"),
+        serialization_alias="maxScore"
+    )
 
 
 class ComputeAndScaling(BaseModel):
@@ -16,22 +28,34 @@ class ComputeAndScaling(BaseModel):
     compute_variety_score: int = Field(
         ge=1,
         le=10,
-        description="Variety of compute options (CPU, GPU, TPU, etc.)"
+        description="Variety of compute options (CPU, GPU, TPU, etc.)",
+        validation_alias=AliasChoices(
+            "compute_variety_score", "computeVarietyScore"),
+        serialization_alias="computeVarietyScore"
     )
     auto_scaling_score: int = Field(
         ge=1,
         le=10,
-        description="Auto-scaling capabilities"
+        description="Auto-scaling capabilities",
+        validation_alias=AliasChoices(
+            "auto_scaling_score", "autoScalingScore"),
+        serialization_alias="autoScalingScore"
     )
     spot_instance_support: int = Field(
         ge=1,
         le=10,
-        description="Spot/preemptible instance availability"
+        description="Spot/preemptible instance availability",
+        validation_alias=AliasChoices(
+            "spot_instance_support", "spotInstanceSupport"),
+        serialization_alias="spotInstanceSupport"
     )
     distributed_training_support: int = Field(
         ge=1,
         le=10,
-        description="Multi-node distributed training"
+        description="Multi-node distributed training",
+        validation_alias=AliasChoices(
+            "distributed_training_support", "distributedTrainingSupport"),
+        serialization_alias="distributedTrainingSupport"
     )
 
     @property
@@ -45,22 +69,34 @@ class DataManagement(BaseModel):
     storage_options_score: int = Field(
         ge=1,
         le=10,
-        description="Variety of storage solutions"
+        description="Variety of storage solutions",
+        validation_alias=AliasChoices(
+            "storage_options_score", "storageOptionsScore"),
+        serialization_alias="storageOptionsScore"
     )
     data_versioning_score: int = Field(
         ge=1,
         le=10,
-        description="Data versioning capabilities"
+        description="Data versioning capabilities",
+        validation_alias=AliasChoices(
+            "data_versioning_score", "dataVersioningScore"),
+        serialization_alias="dataVersioningScore"
     )
     data_pipeline_orchestration: int = Field(
         ge=1,
         le=10,
-        description="Data pipeline tools"
+        description="Data pipeline tools",
+        validation_alias=AliasChoices(
+            "data_pipeline_orchestration", "dataPipelineOrchestration"),
+        serialization_alias="dataPipelineOrchestration"
     )
     data_integration_score: int = Field(
         ge=1,
         le=10,
-        description="Integration with data sources"
+        description="Integration with data sources",
+        validation_alias=AliasChoices(
+            "data_integration_score", "dataIntegrationScore"),
+        serialization_alias="dataIntegrationScore"
     )
 
     @property
@@ -74,22 +110,34 @@ class ModelDevelopment(BaseModel):
     framework_support_score: int = Field(
         ge=1,
         le=10,
-        description="ML framework support"
+        description="ML framework support",
+        validation_alias=AliasChoices(
+            "framework_support_score", "frameworkSupportScore"),
+        serialization_alias="frameworkSupportScore"
     )
     experiment_tracking_score: int = Field(
         ge=1,
         le=10,
-        description="Experiment tracking tools"
+        description="Experiment tracking tools",
+        validation_alias=AliasChoices(
+            "experiment_tracking_score", "experimentTrackingScore"),
+        serialization_alias="experimentTrackingScore"
     )
     hyperparameter_tuning_score: int = Field(
         ge=1,
         le=10,
-        description="Hyperparameter optimization"
+        description="Hyperparameter optimization",
+        validation_alias=AliasChoices(
+            "hyperparameter_tuning_score", "hyperparameterTuningScore"),
+        serialization_alias="hyperparameterTuningScore"
     )
     notebook_environment_score: int = Field(
         ge=1,
         le=10,
-        description="Managed notebook environments"
+        description="Managed notebook environments",
+        validation_alias=AliasChoices(
+            "notebook_environment_score", "notebookEnvironmentScore"),
+        serialization_alias="notebookEnvironmentScore"
     )
 
     @property
@@ -103,22 +151,34 @@ class MLOpsPipeline(BaseModel):
     workflow_orchestration_score: int = Field(
         ge=1,
         le=10,
-        description="Workflow orchestration tools"
+        description="Workflow orchestration tools",
+        validation_alias=AliasChoices(
+            "workflow_orchestration_score", "workflowOrchestrationScore"),
+        serialization_alias="workflowOrchestrationScore"
     )
     cicd_integration_score: int = Field(
         ge=1,
         le=10,
-        description="CI/CD integration"
+        description="CI/CD integration",
+        validation_alias=AliasChoices(
+            "cicd_integration_score", "cicdIntegrationScore"),
+        serialization_alias="cicdIntegrationScore"
     )
     model_validation_score: int = Field(
         ge=1,
         le=10,
-        description="Automated model validation"
+        description="Automated model validation",
+        validation_alias=AliasChoices(
+            "model_validation_score", "modelValidationScore"),
+        serialization_alias="modelValidationScore"
     )
     environment_management_score: int = Field(
         ge=1,
         le=10,
-        description="Environment management"
+        description="Environment management",
+        validation_alias=AliasChoices(
+            "environment_management_score", "environmentManagementScore"),
+        serialization_alias="environmentManagementScore"
     )
 
     @property
@@ -132,27 +192,41 @@ class ModelDeployment(BaseModel):
     deployment_options_score: int = Field(
         ge=1,
         le=10,
-        description="Variety of deployment options"
+        description="Variety of deployment options",
+        validation_alias=AliasChoices(
+            "deployment_options_score", "deploymentOptionsScore"),
+        serialization_alias="deploymentOptionsScore"
     )
     real_time_inference_score: int = Field(
         ge=1,
         le=10,
-        description="Real-time inference capabilities"
+        description="Real-time inference capabilities",
+        validation_alias=AliasChoices(
+            "real_time_inference_score", "realTimeInferenceScore"),
+        serialization_alias="realTimeInferenceScore"
     )
     batch_inference_score: int = Field(
         ge=1,
         le=10,
-        description="Batch inference capabilities"
+        description="Batch inference capabilities",
+        validation_alias=AliasChoices(
+            "batch_inference_score", "batchInferenceScore"),
+        serialization_alias="batchInferenceScore"
     )
     ab_testing_score: int = Field(
         ge=1,
         le=10,
-        description="A/B testing support"
+        description="A/B testing support",
+        validation_alias=AliasChoices("ab_testing_score", "abTestingScore"),
+        serialization_alias="abTestingScore"
     )
     canary_deployment_score: int = Field(
         ge=1,
         le=10,
-        description="Canary deployment capabilities"
+        description="Canary deployment capabilities",
+        validation_alias=AliasChoices(
+            "canary_deployment_score", "canaryDeploymentScore"),
+        serialization_alias="canaryDeploymentScore"
     )
 
     @property
@@ -167,27 +241,42 @@ class MonitoringAndObservability(BaseModel):
     model_performance_monitoring: int = Field(
         ge=1,
         le=10,
-        description="Model performance monitoring"
+        description="Model performance monitoring",
+        validation_alias=AliasChoices(
+            "model_performance_monitoring", "modelPerformanceMonitoring"),
+        serialization_alias="modelPerformanceMonitoring"
     )
     data_drift_detection: int = Field(
         ge=1,
         le=10,
-        description="Data drift detection"
+        description="Data drift detection",
+        validation_alias=AliasChoices(
+            "data_drift_detection", "dataDriftDetection"),
+        serialization_alias="dataDriftDetection"
     )
     infrastructure_monitoring: int = Field(
         ge=1,
         le=10,
-        description="Infrastructure monitoring"
+        description="Infrastructure monitoring",
+        validation_alias=AliasChoices(
+            "infrastructure_monitoring", "infrastructureMonitoring"),
+        serialization_alias="infrastructureMonitoring"
     )
     logging_and_alerting: int = Field(
         ge=1,
         le=10,
-        description="Logging and alerting systems"
+        description="Logging and alerting systems",
+        validation_alias=AliasChoices(
+            "logging_and_alerting", "loggingAndAlerting"),
+        serialization_alias="loggingAndAlerting"
     )
     model_explainability: int = Field(
         ge=1,
         le=10,
-        description="Model explainability tools"
+        description="Model explainability tools",
+        validation_alias=AliasChoices(
+            "model_explainability", "modelExplainability"),
+        serialization_alias="modelExplainability"
     )
 
     @property
@@ -202,27 +291,39 @@ class SecurityAndCompliance(BaseModel):
     identity_access_management: int = Field(
         ge=1,
         le=10,
-        description="IAM capabilities"
+        description="IAM capabilities",
+        validation_alias=AliasChoices(
+            "identity_access_management", "identityAccessManagement"),
+        serialization_alias="identityAccessManagement"
     )
     data_encryption: int = Field(
         ge=1,
         le=10,
-        description="Data encryption at rest and in transit"
+        description="Data encryption at rest and in transit",
+        validation_alias=AliasChoices("data_encryption", "dataEncryption"),
+        serialization_alias="dataEncryption"
     )
     compliance_certifications: int = Field(
         ge=1,
         le=10,
-        description="Compliance certifications"
+        description="Compliance certifications",
+        validation_alias=AliasChoices(
+            "compliance_certifications", "complianceCertifications"),
+        serialization_alias="complianceCertifications"
     )
     network_security: int = Field(
         ge=1,
         le=10,
-        description="Network security features"
+        description="Network security features",
+        validation_alias=AliasChoices("network_security", "networkSecurity"),
+        serialization_alias="networkSecurity"
     )
     audit_logging: int = Field(
         ge=1,
         le=10,
-        description="Audit logging capabilities"
+        description="Audit logging capabilities",
+        validation_alias=AliasChoices("audit_logging", "auditLogging"),
+        serialization_alias="auditLogging"
     )
 
     @property
@@ -237,22 +338,33 @@ class CostManagement(BaseModel):
     cost_transparency: int = Field(
         ge=1,
         le=10,
-        description="Cost transparency and reporting"
+        description="Cost transparency and reporting",
+        validation_alias=AliasChoices("cost_transparency", "costTransparency"),
+        serialization_alias="costTransparency"
     )
     resource_optimization: int = Field(
         ge=1,
         le=10,
-        description="Resource utilization optimization"
+        description="Resource utilization optimization",
+        validation_alias=AliasChoices(
+            "resource_optimization", "resourceOptimization"),
+        serialization_alias="resourceOptimization"
     )
     pricing_flexibility: int = Field(
         ge=1,
         le=10,
-        description="Flexible pricing models"
+        description="Flexible pricing models",
+        validation_alias=AliasChoices(
+            "pricing_flexibility", "pricingFlexibility"),
+        serialization_alias="pricingFlexibility"
     )
     cost_prediction_score: int = Field(
         ge=1,
         le=10,
-        description="Cost prediction and budgeting"
+        description="Cost prediction and budgeting",
+        validation_alias=AliasChoices(
+            "cost_prediction_score", "costPredictionScore"),
+        serialization_alias="costPredictionScore"
     )
 
     @property
@@ -266,27 +378,38 @@ class DeveloperExperience(BaseModel):
     api_sdk_quality: int = Field(
         ge=1,
         le=10,
-        description="API and SDK quality"
+        description="API and SDK quality",
+        validation_alias=AliasChoices("api_sdk_quality", "apiSdkQuality"),
+        serialization_alias="apiSdkQuality"
     )
     tool_integration: int = Field(
         ge=1,
         le=10,
-        description="Integration with ML tools"
+        description="Integration with ML tools",
+        validation_alias=AliasChoices("tool_integration", "toolIntegration"),
+        serialization_alias="toolIntegration"
     )
     documentation_quality: int = Field(
         ge=1,
         le=10,
-        description="Documentation quality"
+        description="Documentation quality",
+        validation_alias=AliasChoices(
+            "documentation_quality", "documentationQuality"),
+        serialization_alias="documentationQuality"
     )
     community_support: int = Field(
         ge=1,
         le=10,
-        description="Community and support"
+        description="Community and support",
+        validation_alias=AliasChoices("community_support", "communitySupport"),
+        serialization_alias="communitySupport"
     )
     migration_tools: int = Field(
         ge=1,
         le=10,
-        description="Migration tools and support"
+        description="Migration tools and support",
+        validation_alias=AliasChoices("migration_tools", "migrationTools"),
+        serialization_alias="migrationTools"
     )
 
     @property
@@ -301,22 +424,32 @@ class PerformanceAndReliability(BaseModel):
     sla_score: int = Field(
         ge=1,
         le=10,
-        description="Service level agreements"
+        description="Service level agreements",
+        validation_alias=AliasChoices("sla_score", "slaScore"),
+        serialization_alias="slaScore"
     )
     global_availability: int = Field(
         ge=1,
         le=10,
-        description="Global availability and regions"
+        description="Global availability and regions",
+        validation_alias=AliasChoices(
+            "global_availability", "globalAvailability"),
+        serialization_alias="globalAvailability"
     )
     disaster_recovery: int = Field(
         ge=1,
         le=10,
-        description="Disaster recovery capabilities"
+        description="Disaster recovery capabilities",
+        validation_alias=AliasChoices("disaster_recovery", "disasterRecovery"),
+        serialization_alias="disasterRecovery"
     )
     performance_benchmarks: int = Field(
         ge=1,
         le=10,
-        description="Performance benchmarks for ML workloads"
+        description="Performance benchmarks for ML workloads",
+        validation_alias=AliasChoices(
+            "performance_benchmarks", "performanceBenchmarks"),
+        serialization_alias="performanceBenchmarks"
     )
 
     @property
@@ -329,32 +462,74 @@ class MLOpsPlatformEvaluation(BaseModel):
     """Complete MLOps platform evaluation model"""
     platform_id: Optional[str] = Field(
         default=None,
-        validation_alias=AliasChoices("platform_id", "id"),
+        validation_alias=AliasChoices("platform_id", "id", "platformId"),
+        serialization_alias="platformId",
         description="Unique identifier for the platform"
     )
     platform_type: PlatformType = Field(
-        description="Type of platform"
+        description="Type of platform",
+        validation_alias=AliasChoices("platform_type", "platformType"),
+        serialization_alias="platformType"
     )
     evaluation_date: datetime = Field(
         default_factory=datetime.now,
-        description="Date of evaluation"
+        description="Date of evaluation",
+        validation_alias=AliasChoices("evaluation_date", "evaluationDate"),
+        serialization_alias="evaluationDate"
     )
     evaluator_id: Optional[str] = Field(
         None,
-        description="ID of the evaluator, probably slack id"
+        description="ID of the evaluator, probably slack id",
+        validation_alias=AliasChoices("evaluator_id", "evaluatorId"),
+        serialization_alias="evaluatorId"
     )
 
     # Core proficiency scores
-    compute_and_scaling: ComputeAndScaling
-    data_management: DataManagement
-    model_development: ModelDevelopment
-    mlops_pipeline: MLOpsPipeline
-    model_deployment: ModelDeployment
-    monitoring_and_observability: MonitoringAndObservability
-    security_and_compliance: SecurityAndCompliance
-    cost_management: CostManagement
-    developer_experience: DeveloperExperience
-    performance_and_reliability: PerformanceAndReliability
+    compute_and_scaling: ComputeAndScaling = Field(
+        validation_alias=AliasChoices(
+            "compute_and_scaling", "computeAndScaling"),
+        serialization_alias="computeAndScaling"
+    )
+    data_management: DataManagement = Field(
+        validation_alias=AliasChoices("data_management", "dataManagement"),
+        serialization_alias="dataManagement"
+    )
+    model_development: ModelDevelopment = Field(
+        validation_alias=AliasChoices("model_development", "modelDevelopment"),
+        serialization_alias="modelDevelopment"
+    )
+    mlops_pipeline: MLOpsPipeline = Field(
+        validation_alias=AliasChoices("mlops_pipeline", "mlopsPipeline", "mlOpsPipeline"),
+        serialization_alias="mlOpsPipeline"
+    )
+    model_deployment: ModelDeployment = Field(
+        validation_alias=AliasChoices("model_deployment", "modelDeployment"),
+        serialization_alias="modelDeployment"
+    )
+    monitoring_and_observability: MonitoringAndObservability = Field(
+        validation_alias=AliasChoices(
+            "monitoring_and_observability", "monitoringAndObservability"),
+        serialization_alias="monitoringAndObservability"
+    )
+    security_and_compliance: SecurityAndCompliance = Field(
+        validation_alias=AliasChoices(
+            "security_and_compliance", "securityAndCompliance"),
+        serialization_alias="securityAndCompliance"
+    )
+    cost_management: CostManagement = Field(
+        validation_alias=AliasChoices("cost_management", "costManagement"),
+        serialization_alias="costManagement"
+    )
+    developer_experience: DeveloperExperience = Field(
+        validation_alias=AliasChoices(
+            "developer_experience", "developerExperience"),
+        serialization_alias="developerExperience"
+    )
+    performance_and_reliability: PerformanceAndReliability = Field(
+        validation_alias=AliasChoices(
+            "performance_and_reliability", "performanceAndReliability"),
+        serialization_alias="performanceAndReliability"
+    )
 
     @property
     def overall_platform_score(self) -> float:
@@ -410,3 +585,6 @@ class MLOpsPlatformEvaluation(BaseModel):
     class Config:
         use_enum_values = True
         validate_assignment = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }

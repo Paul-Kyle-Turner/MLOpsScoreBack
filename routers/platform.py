@@ -35,14 +35,22 @@ async def platform_exists(platform_name: str) -> List[PlatformInformation]:
 
 
 @router.get("/{platform_name}", tags=["platforms", "single"], summary="Get platform by name")
-async def get_platform(platform_name: str) -> PlatformInformation:
+async def get_platform_by_name(platform_name: str) -> PlatformInformation:
     platform = controller.get_platform_by_name(platform_name)
     if not platform:
         raise HTTPException(status_code=404, detail="Platform not found")
     return platform
 
 
-@router.get("/paginate", tags=["platforms", "paginate", "all"], summary="Paginate platforms")
+@router.get("/id/{platform_id}", tags=["platforms", "single"], summary="Get platform by ID")
+async def get_platform_by_id(platform_id: int) -> PlatformInformation:
+    platform = controller.get_platform(platform_id)
+    if not platform:
+        raise HTTPException(status_code=404, detail="Platform not found")
+    return platform
+
+
+@router.post("/paginate", tags=["platforms", "paginate", "all"], summary="Paginate platforms")
 async def paginate_platforms(paginate: PaginateRequest) -> List[PlatformInformation]:
     # TODO add filtering options
     platforms = controller.paginate_platforms(
