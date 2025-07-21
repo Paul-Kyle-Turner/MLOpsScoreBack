@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     slack_team_id: str = "T7FHA770F"
     slack_team_name: str = "MyselfInc"
 
+    # Pinecone settings
+    pinecone_api_key: str
+    pinecone_index_hostname: str
+    pinecone_platform_namespace: str = "platforms"
+
     model_config = SettingsConfigDict(
         env_file='.env',
         extra='ignore'
