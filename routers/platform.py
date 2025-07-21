@@ -57,6 +57,8 @@ async def paginate_platforms(paginate: PaginateRequest) -> List[PlatformInformat
 @router.post("/search", tags=["platforms", "search"], summary="Search platforms by name")
 async def search_platforms(search_query: SearchRequest) -> List[PlatformInformation]:
     platforms = await controller.search_platforms_with_pinecone(search_query.search_query)
+    print(f"Search results: {platforms}")
+
     if not platforms:
         return []
     return platforms

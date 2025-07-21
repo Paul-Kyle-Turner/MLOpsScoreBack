@@ -23,6 +23,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
     try:
         # Convert basic platform data
         platform_data = {
+            'id': platform.id,
             'platform_name': platform.platform_name,
             'platform_type': platform.platform_type,
             'parent_company': platform.parent_company,

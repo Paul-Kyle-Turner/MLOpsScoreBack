@@ -544,8 +544,10 @@ class MLOpsPlatformController:
         """Add a platform record to Pinecone."""
         try:
             # Convert the platform model to JSON string
-            platform_json = platform.model_dump_json()
-            platform_data = platform.model_dump()
+            platform_json = platform.model_dump_json(
+                exclude={'founded_date', 'last_updated'})
+            platform_data = platform.model_dump(
+                exclude={'founded_date', 'last_updated', 'networking', 'security_features'})
 
             # Create the record in the required format
             record = {
@@ -569,8 +571,10 @@ class MLOpsPlatformController:
         """Update a platform record in Pinecone."""
         try:
             # Convert the platform model to JSON string
-            platform_json = platform.model_dump_json()
-            platform_data = platform.model_dump()
+            platform_json = platform.model_dump_json(
+                exclude={'founded_date', 'last_updated'})
+            platform_data = platform.model_dump(
+                exclude={'founded_date', 'last_updated', 'networking', 'security_features'})
 
             # Create the record in the required format
             record = {
@@ -612,8 +616,10 @@ class MLOpsPlatformController:
 
             for platform in platforms:
                 # Convert the platform model to JSON string
-                platform_json = platform.model_dump_json()
-                platform_data = platform.model_dump()
+                platform_json = platform.model_dump_json(
+                    exclude={'founded_date', 'last_updated'})
+                platform_data = platform.model_dump(
+                    exclude={'founded_date', 'last_updated', 'networking', 'security_features'})
 
                 # Create the record in the required format
                 record = {
@@ -644,21 +650,25 @@ class MLOpsPlatformController:
             # Perform semantic search using Pinecone
             search_results = await index.search(
                 query={
-                    "inputs": {"data": query},
+                    "inputs": {"text": query},
                     "top_k": top_k
                 },  # type: ignore
                 namespace=SETTINGS.pinecone_platform_namespace,
             )
 
+            if search_results is None or not search_results.result or not search_results.result.hits:
+                logger.info(f"No matches found for query: {query}")
+                return []
+
             # Extract platform IDs from search results
             platform_ids = []
-            for match in search_results.matches:
+            for hit in search_results.result.hits:
                 try:
-                    platform_id = int(match.id)
+                    platform_id = int(hit._id)
                     platform_ids.append(platform_id)
                 except (ValueError, AttributeError) as e:
                     logger.warning(
-                        f"Could not extract platform ID from search result: {match.id}, error: {e}")
+                        f"Could not extract platform ID from search result: {hit._id}, error: {e}")
                     continue
 
             if not platform_ids:
