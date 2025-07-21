@@ -1,10 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, BigInteger, String, Boolean, Numeric, DateTime, Text, ARRAY, JSON
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Numeric, DateTime, ARRAY, JSON
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy import ForeignKey
 from datetime import datetime
-from typing import List, Optional, Dict, Any
 
 Base = declarative_base()
 
@@ -14,34 +13,34 @@ platform_types_enum = ENUM(
     'private_cloud', 'specialized_ai', 'container_platform',
     'serverless', 'other',
     name='platform_types',
-    schema='mlops_score'
+    schema='platforms'
 )
 
 datacenter_tier_enum = ENUM(
     'tier_1', 'tier_2', 'tier_3', 'tier_4', 'tier_5',
     'colocation', 'edge', 'hybrid', 'unknown',
     name='datacenter_tier',
-    schema='mlops_score'
+    schema='platforms'
 )
 
 pricing_type_enum = ENUM(
     'on_demand', 'reserved', 'spot', 'preemptible',
     'dedicated', 'burstable',
     name='pricing_type',
-    schema='mlops_score'
+    schema='platforms'
 )
 
 compliance_status_enum = ENUM(
     'certified', 'in_progress', 'planned', 'not_applicable', 'unknown',
     name='compliance_status',
-    schema='mlops_score'
+    schema='platforms'
 )
 
 billing_increment_enum = ENUM(
     'per_second', 'per_minute', 'per_hour', 'per_day',
     'per_month', 'per_year', 'one_time', 'custom',
     name='billing_increment',
-    schema='mlops_score'
+    schema='platforms'
 )
 
 # Define SQLAlchemy models
@@ -49,7 +48,7 @@ billing_increment_enum = ENUM(
 
 class NetworkCapabilities(Base):
     __tablename__ = 'network_capabilities'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     bandwidth_gbps = Column(Numeric(4))
@@ -63,7 +62,7 @@ class NetworkCapabilities(Base):
 
 class SecurityFeatures(Base):
     __tablename__ = 'security_features'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     encryption_at_rest = Column(Boolean)
@@ -78,7 +77,7 @@ class SecurityFeatures(Base):
 
 class PlatformInformation(Base):
     __tablename__ = 'platform_information'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     platform_name = Column(String(512))
@@ -96,14 +95,14 @@ class PlatformInformation(Base):
     networking_id = Column(
         BigInteger,
         ForeignKey(
-            'mlops_score.network_capabilities.id',
+            'platforms.network_capabilities.id',
             ondelete='CASCADE'
         )
     )
     security_id = Column(
         BigInteger,
         ForeignKey(
-            'mlops_score.security_features.id',
+            'platforms.security_features.id',
             ondelete='CASCADE'
         )
     )
@@ -123,11 +122,11 @@ class PlatformInformation(Base):
 
 class GeographicRegions(Base):
     __tablename__ = 'geographic_regions'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     platform_id = Column(BigInteger, ForeignKey(
-        'mlops_score.platform_information.id'), nullable=False)
+        'platforms.platform_information.id'), nullable=False)
     region_name = Column(String(256), nullable=False)
     region_code = Column(String(256), nullable=False)
     country = Column(String(2), nullable=False)
@@ -141,11 +140,11 @@ class GeographicRegions(Base):
 
 class ComplianceCertification(Base):
     __tablename__ = 'compliance_certification'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     platform_id = Column(BigInteger, ForeignKey(
-        'mlops_score.platform_information.id'), nullable=False)
+        'platforms.platform_information.id'), nullable=False)
     certification_name = Column(String(100), nullable=False)
     certification_date = Column(DateTime(timezone=True))
     certifying_body = Column(String(256))
@@ -157,11 +156,11 @@ class ComplianceCertification(Base):
 
 class ComputeInstance(Base):
     __tablename__ = 'compute_instance'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     platform_id = Column(BigInteger, ForeignKey(
-        'mlops_score.platform_information.id'), nullable=False)
+        'platforms.platform_information.id'), nullable=False)
     instance_name = Column(String(512))
     instance_family = Column(String(512))
     vcpus = Column(Integer, nullable=False)
@@ -180,11 +179,11 @@ class ComputeInstance(Base):
 
 class PricingModel(Base):
     __tablename__ = 'pricing_model'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     compute_instance_id = Column(BigInteger, ForeignKey(
-        'mlops_score.platform_information.id'), nullable=False)
+        'platforms.platform_information.id'), nullable=False)
     pricing_type = Column(pricing_type_enum)
     price_per_hour = Column(Numeric(6))
     price_per_month = Column(Numeric(6))
@@ -196,11 +195,11 @@ class PricingModel(Base):
 
 class SupportTier(Base):
     __tablename__ = 'support_tier'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     platform_id = Column(BigInteger, ForeignKey(
-        'mlops_score.platform_information.id'), nullable=False)
+        'platforms.platform_information.id'), nullable=False)
     tier_name = Column(String(256))
     average_response_time = Column(String(512))
     channels = Column(ARRAY(String(256)))
@@ -213,11 +212,11 @@ class SupportTier(Base):
 
 class ProprietarySoftware(Base):
     __tablename__ = 'proprietary_software'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     platform_id = Column(BigInteger, ForeignKey(
-        'mlops_score.platform_information.id'), nullable=False)
+        'platforms.platform_information.id'), nullable=False)
     software_name = Column(String(512))
     software_type = Column(String(256))
     description = Column(String(1024))
@@ -234,11 +233,11 @@ class ProprietarySoftware(Base):
 
 class ProprietaryHardware(Base):
     __tablename__ = 'proprietary_hardware'
-    __table_args__ = {'schema': 'mlops_score'}
+    __table_args__ = {'schema': 'platforms'}
 
     id = Column(BigInteger, primary_key=True)
     platform_id = Column(BigInteger, ForeignKey(
-        'mlops_score.platform_information.id'), nullable=False)
+        'platforms.platform_information.id'), nullable=False)
     hardware_name = Column(String(512))
     hardware_type = Column(String(256))
     description = Column(String(1024))

@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, validator, HttpUrl
-from typing import Optional, List, Dict, Any, Union
+from pydantic import AliasChoices, BaseModel, Field, field_validator
+from typing import Optional, List, Dict, Any
 from enum import Enum
 from datetime import datetime, date
 from decimal import Decimal
@@ -7,468 +7,709 @@ from decimal import Decimal
 
 class PlatformType(str, Enum):
     """Platform type classifications"""
-    HYPERSCALER = "Hyperscaler"  # AWS, GCP, Azure
-    GPU_CLOUD = "GPU Cloud"      # CoreWeave, Lambda Labs, RunPod
-    EDGE_CLOUD = "Edge Cloud"    # Smaller regional providers
-    HYBRID_CLOUD = "Hybrid Cloud"
-    PRIVATE_CLOUD = "Private Cloud"
-    SPECIALIZED_AI = "Specialized AI"  # AI-focused platforms
-    CONTAINER_PLATFORM = "Container Platform"  # Kubernetes-focused
-    SERVERLESS = "Serverless"
-    OTHER = "Other"
+    HYPERSCALER = "hyperscaler"  # AWS, GCP, Azure
+    GPU_CLOUD = "gpu_cloud"      # CoreWeave, Lambda Labs, RunPod
+    EDGE_CLOUD = "edge_cloud"    # Smaller regional providers
+    HYBRID_CLOUD = "hybrid_cloud"
+    PRIVATE_CLOUD = "private_cloud"
+    SPECIALIZED_AI = "specialized_ai"  # AI-focused platforms
+    CONTAINER_PLATFORM = "container_platform"  # Kubernetes-focused
+    SERVERLESS = "serverless"
+    OTHER = "other"
 
 
 class DatacenterTier(str, Enum):
     """Datacenter tier classifications"""
-    TIER_1 = "Tier 1"  # 99.671% uptime, basic infrastructure
-    TIER_2 = "Tier 2"  # 99.741% uptime, redundant components
-    TIER_3 = "Tier 3"  # 99.982% uptime, concurrently maintainable
-    TIER_4 = "Tier 4"  # 99.995% uptime, fault tolerant
-    TIER_5 = "Tier 5"  # 99.999% uptime, fully redundant
-    COLOCATION = "Colocation"  # Third-party datacenter
-    EDGE = "Edge"      # Edge computing facilities
-    HYBRID = "Hybrid"  # Mix of tiers
-    UNKNOWN = "Unknown"
+    TIER_1 = "tier_1"  # 99.671% uptime, basic infrastructure
+    TIER_2 = "tier_2"  # 99.741% uptime, redundant components
+    TIER_3 = "tier_3"  # 99.982% uptime, concurrently maintainable
+    TIER_4 = "tier_4"  # 99.995% uptime, fault tolerant
+    TIER_5 = "tier_5"  # 99.999% uptime, fully redundant
+    COLOCATION = "colocation"  # Third-party datacenter
+    EDGE = "edge"      # Edge computing facilities
+    HYBRID = "hybrid"  # Mix of tiers
+    UNKNOWN = "unknown"
 
 
 class ComplianceStatus(str, Enum):
     """Compliance certification status"""
-    CERTIFIED = "Certified"
-    IN_PROGRESS = "In Progress"
-    PLANNED = "Planned"
-    NOT_APPLICABLE = "Not Applicable"
-    UNKNOWN = "Unknown"
+    CERTIFIED = "certified"
+    IN_PROGRESS = "in_progress"
+    PLANNED = "planned"
+    NOT_APPLICABLE = "not_applicable"
+    UNKNOWN = "unknown"
 
 
 class PricingType(str, Enum):
     """Compute instance pricing models"""
-    ON_DEMAND = "On-Demand"
-    RESERVED = "Reserved"
-    SPOT = "Spot"
-    PREEMPTIBLE = "Preemptible"
-    DEDICATED = "Dedicated"
-    BURSTABLE = "Burstable"
+    ON_DEMAND = "on_demand"
+    RESERVED = "reserved"
+    SPOT = "spot"
+    PREEMPTIBLE = "preemptible"
+    DEDICATED = "dedicated"
+    BURSTABLE = "burstable"
 
 
 class BillingIncrement(str, Enum):
     """Billing increment options"""
-    PER_SECOND = "Per Second"
-    PER_MINUTE = "Per Minute"
-    PER_HOUR = "Per Hour"
-    PER_DAY = "Per Day"
-    PER_MONTH = "Per Month"
-    PER_YEAR = "Per Year"
-    ONE_TIME = "One Time"
-    CUSTOM = "Custom"
+    PER_SECOND = "per_second"
+    PER_MINUTE = "per_minute"
+    PER_HOUR = "per_hour"
+    PER_DAY = "per_day"
+    PER_MONTH = "per_month"
+    PER_YEAR = "per_year"
+    ONE_TIME = "one_time"
+    CUSTOM = "custom"
 
 
 class GeographicRegion(BaseModel):
     """Geographic region information"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     region_name: str = Field(
-        description="Name of the region"
+        description="Name of the region",
+        validation_alias=AliasChoices("region", "region_name", "regionName"),
+        serialization_alias="regionName"
     )
     region_code: Optional[str] = Field(
         None,
-        description="Region code (e.g., us-east-1)"
+        description="Region code (e.g., us-east-1)",
+        validation_alias=AliasChoices("region_code", "regionCode"),
+        serialization_alias="regionCode"
     )
     country_code: str = Field(
-        description="Country where region is located"
+        description="Country where region is located",
+        validation_alias=AliasChoices("country_code", "countryCode"),
+        serialization_alias="countryCode"
     )
     availability_zones: Optional[int] = Field(
         None,
-        description="Number of availability zones"
+        description="Number of availability zones",
+        validation_alias=AliasChoices("availability_zones", "availabilityZones"),
+        serialization_alias="availabilityZones"
     )
     datacenter_tier: DatacenterTier = Field(
-        description="Datacenter tier classification"
+        description="Datacenter tier classification",
+        validation_alias=AliasChoices("datacenter_tier", "datacenterTier"),
+        serialization_alias="datacenterTier"
     )
     edge_location: bool = Field(
         default=False,
-        description="Whether this is an edge location"
+        description="Whether this is an edge location",
+        validation_alias=AliasChoices("edge_location", "edgeLocation"),
+        serialization_alias="edgeLocation"
     )
+
+    @field_validator('datacenter_tier', mode='before')
+    @classmethod
+    def validate_datacenter_tier(cls, v):
+        """Normalize datacenter tier input"""
+        if isinstance(v, str):
+            normalized = v.lower().replace(' ', '_')
+            # Try to find matching enum value
+            for tier in DatacenterTier:
+                if tier.value == normalized:
+                    return tier
+            # If no exact match, return original for standard enum validation
+            return v
+        return v
 
 
 class ComplianceCertification(BaseModel):
     """Compliance certification details"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     certification_name: str = Field(
-        description="Name of certification"
+        description="Name of certification",
+        validation_alias=AliasChoices("certification_name", "certificationName"),
+        serialization_alias="certificationName"
     )
     status: ComplianceStatus = Field(
-        description="Current status"
+        description="Current status",
+        serialization_alias="status"
     )
     certification_date: Optional[date] = Field(
         None,
-        description="Date of certification"
+        description="Date of certification",
+        validation_alias=AliasChoices("certification_date", "certificationDate"),
+        serialization_alias="certificationDate"
     )
     certifying_body: Optional[str] = Field(
         None,
-        description="Certifying organization"
+        description="Certifying organization",
+        validation_alias=AliasChoices("certifying_body", "certifyingBody"),
+        serialization_alias="certifyingBody"
     )
-    certificate_url: Optional[HttpUrl] = Field(
+    certificate_url: Optional[str] = Field(
         None,
-        description="URL to certificate"
+        description="URL to certificate",
+        validation_alias=AliasChoices("certificate_url", "certificateUrl"),
+        serialization_alias="certificateUrl"
     )
+
+    @field_validator('status', mode='before')
+    @classmethod
+    def validate_status(cls, v):
+        """Normalize compliance status input"""
+        if isinstance(v, str):
+            normalized = v.lower().replace(' ', '_')
+            # Try to find matching enum value
+            for status in ComplianceStatus:
+                if status.value == normalized:
+                    return status
+            # If no exact match, return original for standard enum validation
+            return v
+        return v
 
 
 class PricingModel(BaseModel):
     """Pricing model details"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     pricing_type: PricingType = Field(
-        description="Type of pricing model"
+        description="Type of pricing model",
+        validation_alias=AliasChoices("pricing_type", "pricingType"),
+        serialization_alias="pricingType"
     )
     price_per_hour: Optional[Decimal] = Field(
         None,
-        description="Price per hour"
+        description="Price per hour",
+        validation_alias=AliasChoices("price_per_hour", "pricePerHour"),
+        serialization_alias="pricePerHour"
     )
     price_per_month: Optional[Decimal] = Field(
         None,
-        description="Price per month"
+        description="Price per month",
+        validation_alias=AliasChoices("price_per_month", "pricePerMonth"),
+        serialization_alias="pricePerMonth"
     )
     minimum_commitment: Optional[str] = Field(
         None,
-        description="Minimum commitment period"
+        description="Minimum commitment period",
+        validation_alias=AliasChoices("minimum_commitment", "minimumCommitment"),
+        serialization_alias="minimumCommitment"
     )
     billing_increment: Optional[BillingIncrement] = Field(
         None,
-        description="Billing increment"
+        description="Billing increment",
+        validation_alias=AliasChoices("billing_increment", "billingIncrement"),
+        serialization_alias="billingIncrement"
     )
+
+    @field_validator('pricing_type', mode='before')
+    @classmethod
+    def validate_pricing_type(cls, v):
+        """Normalize pricing type input"""
+        if isinstance(v, str):
+            normalized = v.lower().replace(' ', '_')
+            # Try to find matching enum value
+            for pricing_type in PricingType:
+                if pricing_type.value == normalized:
+                    return pricing_type
+            # If no exact match, return original for standard enum validation
+            return v
+        return v
+
+    @field_validator('billing_increment', mode='before')
+    @classmethod
+    def validate_billing_increment(cls, v):
+        """Normalize billing increment input"""
+        if isinstance(v, str):
+            normalized = v.lower().replace(' ', '_')
+            # Try to find matching enum value
+            for increment in BillingIncrement:
+                if increment.value == normalized:
+                    return increment
+            # If no exact match, return original for standard enum validation
+            return v
+        return v
 
 
 class ComputeInstance(BaseModel):
     """Compute instance specification"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     instance_name: str = Field(
-        description="Instance type name"
+        description="Instance type name",
+        validation_alias=AliasChoices("instance_name", "instanceName"),
+        serialization_alias="instanceName"
     )
     instance_family: Optional[str] = Field(
         None,
-        description="Instance family"
+        description="Instance family",
+        validation_alias=AliasChoices("instance_family", "instanceFamily"),
+        serialization_alias="instanceFamily"
     )
     vcpus: int = Field(
-        description="Number of vCPUs"
+        description="Number of vCPUs",
+        serialization_alias="vcpus"
     )
     memory_gb: float = Field(
-        description="Memory in GB"
+        description="Memory in GB",
+        validation_alias=AliasChoices("memory_gb", "memoryGb"),
+        serialization_alias="memoryGb"
     )
     storage_gb: Optional[float] = Field(
         None,
-        description="Local storage in GB"
+        description="Local storage in GB",
+        validation_alias=AliasChoices("storage_gb", "storageGb"),
+        serialization_alias="storageGb"
     )
     storage_type: Optional[str] = Field(
         None,
-        description="Storage type (SSD, NVMe, etc.)"
+        description="Storage type (SSD, NVMe, etc.)",
+        validation_alias=AliasChoices("storage_type", "storageType"),
+        serialization_alias="storageType"
     )
     gpu_count: Optional[int] = Field(
         None,
-        description="Number of GPUs"
+        description="Number of GPUs",
+        validation_alias=AliasChoices("gpu_count", "gpuCount"),
+        serialization_alias="gpuCount"
     )
     gpu_type: Optional[str] = Field(
         None,
-        description="GPU type"
+        description="GPU type",
+        validation_alias=AliasChoices("gpu_type", "gpuType"),
+        serialization_alias="gpuType"
     )
     gpu_memory_gb: Optional[float] = Field(
         None,
-        description="GPU memory in GB"
+        description="GPU memory in GB",
+        validation_alias=AliasChoices("gpu_memory_gb", "gpuMemoryGb"),
+        serialization_alias="gpuMemoryGb"
     )
     network_performance: Optional[str] = Field(
         None,
-        description="Network performance tier"
+        description="Network performance tier",
+        validation_alias=AliasChoices("network_performance", "networkPerformance"),
+        serialization_alias="networkPerformance"
     )
     pricing_models: List[PricingModel] = Field(
-        description="Available pricing models for this instance"
+        description="Available pricing models for this instance",
+        validation_alias=AliasChoices("pricing_models", "pricingModels"),
+        serialization_alias="pricingModels"
     )
     architecture: Optional[str] = Field(
         None,
-        description="CPU architecture (x86, ARM, etc.)"
+        description="CPU architecture (x86, ARM, etc.)",
+        serialization_alias="architecture"
     )
     specialized_hardware: Optional[str] = Field(
         None,
-        description="Specialized hardware features"
+        description="Specialized hardware features",
+        validation_alias=AliasChoices("specialized_hardware", "specializedHardware"),
+        serialization_alias="specializedHardware"
     )
 
 
 class ProprietarySoftware(BaseModel):
     """Proprietary software developed by the platform"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     software_name: str = Field(
-        description="Name of the software"
+        description="Name of the software",
+        validation_alias=AliasChoices("software_name", "softwareName"),
+        serialization_alias="softwareName"
     )
     software_type: str = Field(
-        description="Type of software (orchestration, monitoring, etc.)"
+        description="Type of software (orchestration, monitoring, etc.)",
+        validation_alias=AliasChoices("software_type", "softwareType"),
+        serialization_alias="softwareType"
     )
     description: str = Field(
-        description="Description of the software"
+        description="Description of the software",
+        serialization_alias="description"
     )
     version: Optional[str] = Field(
         None,
-        description="Current version"
+        description="Current version",
+        serialization_alias="version"
     )
     open_source: bool = Field(
         default=False,
-        description="Whether software is open source"
+        description="Whether software is open source",
+        validation_alias=AliasChoices("open_source", "openSource"),
+        serialization_alias="openSource"
     )
     license_type: Optional[str] = Field(
         None,
-        description="License type"
+        description="License type",
+        validation_alias=AliasChoices("license_type", "licenseType"),
+        serialization_alias="licenseType"
     )
-    documentation_url: Optional[HttpUrl] = Field(
+    documentation_url: Optional[str] = Field(
         None,
-        description="Documentation URL"
+        description="Documentation URL",
+        validation_alias=AliasChoices("documentation_url", "documentationUrl"),
+        serialization_alias="documentationUrl"
     )
-    github_url: Optional[HttpUrl] = Field(
+    github_url: Optional[str] = Field(
         None,
-        description="GitHub repository URL"
+        description="GitHub repository URL",
+        validation_alias=AliasChoices("github_url", "githubUrl"),
+        serialization_alias="githubUrl"
     )
     use_cases: Optional[List[str]] = Field(
         None,
-        description="Primary use cases"
+        description="Primary use cases",
+        validation_alias=AliasChoices("use_cases", "useCases"),
+        serialization_alias="useCases"
     )
 
 
 class ProprietaryHardware(BaseModel):
     """Proprietary hardware developed by the platform"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     hardware_name: str = Field(
-        description="Name of the hardware"
+        description="Name of the hardware",
+        validation_alias=AliasChoices("hardware_name", "hardwareName"),
+        serialization_alias="hardwareName"
     )
     hardware_type: str = Field(
-        description="Type of hardware (chip, server, networking, etc.)"
+        description="Type of hardware (chip, server, networking, etc.)",
+        validation_alias=AliasChoices("hardware_type", "hardwareType"),
+        serialization_alias="hardwareType"
     )
     description: str = Field(
-        description="Description of the hardware"
+        description="Description of the hardware",
+        serialization_alias="description"
     )
     specifications: Optional[Dict[str, Any]] = Field(
         None,
-        description="Hardware specifications"
+        description="Hardware specifications",
+        serialization_alias="specifications"
     )
     performance_metrics: Optional[Dict[str, Any]] = Field(
         None,
-        description="Performance benchmarks"
+        description="Performance benchmarks",
+        validation_alias=AliasChoices("performance_metrics", "performanceMetrics"),
+        serialization_alias="performanceMetrics"
     )
     availability: Optional[str] = Field(
         None,
-        description="Availability status"
+        description="Availability status",
+        serialization_alias="availability"
     )
     generation: Optional[str] = Field(
         None,
-        description="Hardware generation"
+        description="Hardware generation",
+        serialization_alias="generation"
     )
     manufacturing_partner: Optional[str] = Field(
         None,
-        description="Manufacturing partner"
+        description="Manufacturing partner",
+        validation_alias=AliasChoices("manufacturing_partner", "manufacturingPartner"),
+        serialization_alias="manufacturingPartner"
     )
     use_cases: Optional[List[str]] = Field(
         None,
-        description="Primary use cases"
+        description="Primary use cases",
+        validation_alias=AliasChoices("use_cases", "useCases"),
+        serialization_alias="useCases"
     )
 
 
 class NetworkingCapabilities(BaseModel):
     """Networking capabilities and features"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     bandwidth_gbps: Optional[float] = Field(
         None,
-        description="Network bandwidth in Gbps"
+        description="Network bandwidth in Gbps",
+        validation_alias=AliasChoices("bandwidth_gbps", "bandwidthGbps"),
+        serialization_alias="bandwidthGbps"
     )
     network_type: Optional[str] = Field(
         None,
-        description="Network type (Ethernet, InfiniBand, etc.)"
+        description="Network type (Ethernet, InfiniBand, etc.)",
+        validation_alias=AliasChoices("network_type", "networkType"),
+        serialization_alias="networkType"
     )
     interconnect_technology: Optional[str] = Field(
         None,
-        description="Interconnect technology"
+        description="Interconnect technology",
+        validation_alias=AliasChoices("interconnect_technology", "interconnectTechnology"),
+        serialization_alias="interconnectTechnology"
     )
     vpc_support: bool = Field(
         default=False,
-        description="Virtual Private Cloud support"
+        description="Virtual Private Cloud support",
+        validation_alias=AliasChoices("vpc_support", "vpcSupport"),
+        serialization_alias="vpcSupport"
     )
     load_balancing: bool = Field(
         default=False,
-        description="Load balancing capabilities"
+        description="Load balancing capabilities",
+        validation_alias=AliasChoices("load_balancing", "loadBalancing"),
+        serialization_alias="loadBalancing"
     )
     cdn_integration: bool = Field(
         default=False,
-        description="CDN integration"
+        description="CDN integration",
+        validation_alias=AliasChoices("cdn_integration", "cdnIntegration"),
+        serialization_alias="cdnIntegration"
     )
     private_networking: bool = Field(
         default=False,
-        description="Private networking options"
+        description="Private networking options",
+        validation_alias=AliasChoices("private_networking", "privateNetworking"),
+        serialization_alias="privateNetworking"
     )
 
 
 class SecurityFeatures(BaseModel):
     """Security features and capabilities"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     encryption_at_rest: bool = Field(
         default=False,
-        description="Encryption at rest"
+        description="Encryption at rest",
+        validation_alias=AliasChoices("encryption_at_rest", "encryptionAtRest"),
+        serialization_alias="encryptionAtRest"
     )
     encryption_in_transit: bool = Field(
         default=False,
-        description="Encryption in transit"
+        description="Encryption in transit",
+        validation_alias=AliasChoices("encryption_in_transit", "encryptionInTransit"),
+        serialization_alias="encryptionInTransit"
     )
     key_management: bool = Field(
         default=False,
-        description="Key management service"
+        description="Key management service",
+        validation_alias=AliasChoices("key_management", "keyManagement"),
+        serialization_alias="keyManagement"
     )
     identity_management: bool = Field(
         default=False,
-        description="Identity and access management"
+        description="Identity and access management",
+        validation_alias=AliasChoices("identity_management", "identityManagement"),
+        serialization_alias="identityManagement"
     )
     network_security: bool = Field(
         default=False,
-        description="Network security features"
+        description="Network security features",
+        validation_alias=AliasChoices("network_security", "networkSecurity"),
+        serialization_alias="networkSecurity"
     )
     vulnerability_scanning: bool = Field(
         default=False,
-        description="Vulnerability scanning"
+        description="Vulnerability scanning",
+        validation_alias=AliasChoices("vulnerability_scanning", "vulnerabilityScanning"),
+        serialization_alias="vulnerabilityScanning"
     )
     security_monitoring: bool = Field(
         default=False,
-        description="Security monitoring"
+        description="Security monitoring",
+        validation_alias=AliasChoices("security_monitoring", "securityMonitoring"),
+        serialization_alias="securityMonitoring"
     )
     penetration_testing: bool = Field(
         default=False,
-        description="Regular penetration testing"
+        description="Regular penetration testing",
+        validation_alias=AliasChoices("penetration_testing", "penetrationTesting"),
+        serialization_alias="penetrationTesting"
     )
 
 
 class SupportTier(BaseModel):
     """Support tier information"""
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
     tier_name: str = Field(
-        description="Support tier name"
+        description="Support tier name",
+        validation_alias=AliasChoices("tier_name", "tierName"),
+        serialization_alias="tierName"
     )
     average_response_time: Optional[str] = Field(
         None,
-        description="Average response time SLA"
+        description="Average response time SLA",
+        validation_alias=AliasChoices("average_response_time", "averageResponseTime"),
+        serialization_alias="averageResponseTime"
     )
     channels: List[str] = Field(
-        description="Support channels available"
+        description="Support channels available",
+        serialization_alias="channels"
     )
     hours: str = Field(
-        description="Support hours"
+        description="Support hours",
+        serialization_alias="hours"
     )
     price: Optional[str] = Field(
         None,
-        description="Pricing structure"
+        description="Pricing structure",
+        serialization_alias="price"
     )
     premium_features: Optional[List[str]] = Field(
         None,
-        description="Premium support features"
+        description="Premium support features",
+        validation_alias=AliasChoices("premium_features", "premiumFeatures"),
+        serialization_alias="premiumFeatures"
     )
 
 
 class PlatformInformation(BaseModel):
     """Comprehensive platform information model"""
 
+    # Unique identifier
+    id: Optional[int] = Field(None, description="Unique identifier", serialization_alias="id")
+
     # Basic Platform Information
     platform_name: str = Field(
-        description="Official platform name"
+        description="Official platform name",
+        validation_alias=AliasChoices("platform_name", "platformName"),
+        serialization_alias="platformName"
     )
     platform_type: PlatformType = Field(
-        description="Platform type classification"
+        description="Platform type classification",
+        validation_alias=AliasChoices("platform_type", "platformType"),
+        serialization_alias="platformType"
     )
     parent_company: Optional[str] = Field(
         None,
-        description="Parent company name"
+        description="Parent company name",
+        validation_alias=AliasChoices("parent_company", "parentCompany"),
+        serialization_alias="parentCompany"
     )
     founded_date: Optional[date] = Field(
         None,
-        description="Platform founding date"
+        description="Platform founding date",
+        validation_alias=AliasChoices("founded_date", "foundedDate"),
+        serialization_alias="foundedDate"
     )
     headquarters: Optional[str] = Field(
         None,
-        description="Company headquarters location"
+        description="Company headquarters location",
+        serialization_alias="headquarters"
     )
-    website_url: HttpUrl = Field(
-        description="Official website URL"
+    website_url: str = Field(
+        description="Official website URL",
+        validation_alias=AliasChoices("website_url", "websiteUrl"),
+        serialization_alias="websiteUrl"
     )
-    documentation_url: Optional[HttpUrl] = Field(
+    documentation_url: Optional[str] = Field(
         None,
-        description="Documentation URL"
+        description="Documentation URL",
+        validation_alias=AliasChoices("documentation_url", "documentationUrl"),
+        serialization_alias="documentationUrl"
     )
 
     # Geographic and Infrastructure
     regions: List[GeographicRegion] = Field(
-        description="Available geographic regions"
+        description="Available geographic regions",
+        serialization_alias="regions"
     )
     primary_datacenter_tier: DatacenterTier = Field(
-        description="Primary datacenter tier"
+        description="Primary datacenter tier",
+        validation_alias=AliasChoices("primary_datacenter_tier", "primaryDatacenterTier"),
+        serialization_alias="primaryDatacenterTier"
     )
     total_datacenters: Optional[int] = Field(
         None,
-        description="Total number of datacenters"
+        description="Total number of datacenters",
+        validation_alias=AliasChoices("total_datacenters", "totalDatacenters"),
+        serialization_alias="totalDatacenters"
     )
     edge_locations: Optional[int] = Field(
         None,
-        description="Number of edge locations"
+        description="Number of edge locations",
+        validation_alias=AliasChoices("edge_locations", "edgeLocations"),
+        serialization_alias="edgeLocations"
     )
 
     # Compliance and Certifications
     compliance_certifications: List[ComplianceCertification] = Field(
         default=[],
-        description="Compliance certifications"
+        description="Compliance certifications",
+        validation_alias=AliasChoices("compliance_certifications", "complianceCertifications"),
+        serialization_alias="complianceCertifications"
     )
 
     # Compute Resources
     compute_instances: List[ComputeInstance] = Field(
-        description="Available compute instances"
+        description="Available compute instances",
+        validation_alias=AliasChoices("compute_instances", "computeInstances"),
+        serialization_alias="computeInstances"
     )
     custom_configuration_support: bool = Field(
         default=False,
-        description="Custom configuration support"
+        description="Custom configuration support",
+        validation_alias=AliasChoices("custom_configuration_support", "customConfigurationSupport"),
+        serialization_alias="customConfigurationSupport"
     )
     bare_metal_available: bool = Field(
         default=False,
-        description="Bare metal instances available"
+        description="Bare metal instances available",
+        validation_alias=AliasChoices("bare_metal_available", "bareMetalAvailable"),
+        serialization_alias="bareMetalAvailable"
     )
 
     # Proprietary Technology
     proprietary_software: List[ProprietarySoftware] = Field(
         default=[],
-        description="Proprietary software developed by platform"
+        description="Proprietary software developed by platform",
+        validation_alias=AliasChoices("proprietary_software", "proprietarySoftware"),
+        serialization_alias="proprietarySoftware"
     )
     proprietary_hardware: List[ProprietaryHardware] = Field(
         default=[],
-        description="Proprietary hardware developed by platform"
+        description="Proprietary hardware developed by platform",
+        validation_alias=AliasChoices("proprietary_hardware", "proprietaryHardware"),
+        serialization_alias="proprietaryHardware"
     )
 
     # Technical Capabilities
     networking: NetworkingCapabilities = Field(
-        description="Networking capabilities"
+        description="Networking capabilities",
+        serialization_alias="networking"
     )
     security_features: SecurityFeatures = Field(
-        description="Security features"
+        description="Security features",
+        validation_alias=AliasChoices("security_features", "securityFeatures"),
+        serialization_alias="securityFeatures"
     )
 
     # Service and Support
     support_tiers: List[SupportTier] = Field(
-        description="Available support tiers"
+        description="Available support tiers",
+        validation_alias=AliasChoices("support_tiers", "supportTiers"),
+        serialization_alias="supportTiers"
     )
     sla_uptime: Optional[float] = Field(
         None,
-        description="SLA uptime percentage"
+        description="SLA uptime percentage",
+        validation_alias=AliasChoices("sla_uptime", "slaUptime"),
+        serialization_alias="slaUptime"
     )
 
     # Additional Information
     specializations: Optional[List[str]] = Field(
         None,
-        description="Platform specializations"
+        description="Platform specializations",
+        serialization_alias="specializations"
     )
     target_markets: Optional[List[str]] = Field(
         None,
-        description="Target market segments"
+        description="Target market segments",
+        validation_alias=AliasChoices("target_markets", "targetMarkets"),
+        serialization_alias="targetMarkets"
     )
     notable_customers: Optional[List[str]] = Field(
         None,
-        description="Notable customers (if public)"
+        description="Notable customers (if public)",
+        validation_alias=AliasChoices("notable_customers", "notableCustomers"),
+        serialization_alias="notableCustomers"
     )
     partnerships: Optional[List[str]] = Field(
         None,
-        description="Strategic partnerships"
+        description="Strategic partnerships",
+        serialization_alias="partnerships"
     )
 
     # Metadata
     last_updated: datetime = Field(
         default_factory=datetime.now,
-        description="Last update timestamp"
+        description="Last update timestamp",
+        validation_alias=AliasChoices("last_updated", "lastUpdated"),
+        serialization_alias="lastUpdated"
     )
     data_sources: Optional[List[str]] = Field(
         None,
-        description="Sources of information"
+        description="Sources of information",
+        validation_alias=AliasChoices("data_sources", "dataSources"),
+        serialization_alias="dataSources"
     )
 
     # Computed Properties
@@ -521,6 +762,34 @@ class PlatformInformation(BaseModel):
             models.extend(
                 [pm for pm in instance.pricing_models if pm.pricing_type == pricing_type])
         return models
+
+    @field_validator('platform_type', mode='before')
+    @classmethod
+    def validate_platform_type(cls, v):
+        """Normalize platform type input"""
+        if isinstance(v, str):
+            normalized = v.lower().replace(' ', '_')
+            # Try to find matching enum value
+            for platform_type in PlatformType:
+                if platform_type.value == normalized:
+                    return platform_type
+            # If no exact match, return original for standard enum validation
+            return v
+        return v
+
+    @field_validator('primary_datacenter_tier', mode='before')
+    @classmethod
+    def validate_primary_datacenter_tier(cls, v):
+        """Normalize primary datacenter tier input"""
+        if isinstance(v, str):
+            normalized = v.lower().replace(' ', '_')
+            # Try to find matching enum value
+            for tier in DatacenterTier:
+                if tier.value == normalized:
+                    return tier
+            # If no exact match, return original for standard enum validation
+            return v
+        return v
 
     class Config:
         use_enum_values = True

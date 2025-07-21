@@ -10,8 +10,14 @@ python = "^3.12"
 fastapi = "^0.116.1"
 pydantic = "^2.11.7"
 pydantic-settings = "^2.10.1"
-psycopg2 = "^2.9.10"
 sqlalchemy = "^2.0.41"
+slack-sdk = "^3.36.0"
+uvicorn = "^0.35.0"
+aiohttp = "^3.12.14"
+psycopg2-binary = "^2.9.10"
+gunicorn = "^23.0.0"
+psycopg2 = "^2.9.10"
+pinecone = {extras = ["asyncio"], version = "^7.3.0"}
 
 
 [tool.poetry.group.dev.dependencies]
