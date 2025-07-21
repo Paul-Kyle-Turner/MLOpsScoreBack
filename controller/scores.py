@@ -1,8 +1,9 @@
 import logging
 from typing import List, Optional, Dict, Any
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.exc import SQLAlchemyError, DisconnectionError
 
 from sql_model.scores import (
     Base,
@@ -52,11 +53,31 @@ class MLOpsScoreController:
         """Get a database session."""
         return self.session_local()
 
+    def _check_session_health(self, session: Session) -> bool:
+        """Check if the database session is healthy."""
+        try:
+            # Simple query to test connection
+            session.execute(text("SELECT 1"))
+            return True
+        except (SQLAlchemyError, DisconnectionError) as e:
+            logger.error(f"Session health check failed: {e}")
+            return False
+
+    def _ensure_healthy_session(self, session: Session) -> Session:
+        """Ensure we have a healthy session, create new one if needed."""
+        if not self._check_session_health(session):
+            logger.warning("Session is unhealthy, creating new session")
+            session.close()
+            return self.get_session()
+        return session
+
     # Platform Evaluation CRUD operations
     def create_platform_evaluation(self, evaluation_data: MLOpsPlatformEvaluation) -> MLOpsPlatformEvaluation:
         """Create a complete platform evaluation with all scores."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
+
                 # Create all score components first
                 compute_scaling = self._create_compute_scaling(
                     session, evaluation_data.compute_and_scaling)
@@ -113,6 +134,7 @@ class MLOpsScoreController:
     def get_platform_evaluation(self, evaluation_id: int) -> Optional[MLOpsPlatformEvaluation]:
         """Get a platform evaluation by ID."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             evaluation = session.query(PlatformEvaluation).filter(
                 PlatformEvaluation.id == evaluation_id).first()
             if evaluation:
@@ -122,6 +144,7 @@ class MLOpsScoreController:
     def get_evaluations_by_platform(self, platform_id: int) -> List[MLOpsPlatformEvaluation]:
         """Get all evaluations for a specific platform."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             evaluations = session.query(PlatformEvaluation).filter(
                 PlatformEvaluation.platform_id == platform_id).all()
             return [self._convert_to_model(eval) for eval in evaluations]
@@ -129,6 +152,7 @@ class MLOpsScoreController:
     def get_latest_evaluation_by_platform(self, platform_id: int) -> Optional[MLOpsPlatformEvaluation]:
         """Get the most recent evaluation for a platform."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             evaluation = session.query(PlatformEvaluation).filter(
                 PlatformEvaluation.platform_id == platform_id
             ).order_by(PlatformEvaluation.evaluation_date.desc()).first()
@@ -139,6 +163,7 @@ class MLOpsScoreController:
     def get_all_evaluations(self, limit: int = 100, offset: int = 0) -> List[MLOpsPlatformEvaluation]:
         """Get all platform evaluations with pagination."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             evaluations = session.query(PlatformEvaluation).offset(
                 offset).limit(limit).all()
             return [self._convert_to_model(eval) for eval in evaluations]
@@ -147,6 +172,7 @@ class MLOpsScoreController:
         """Update an existing platform evaluation."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 evaluation = session.query(PlatformEvaluation).filter(
                     PlatformEvaluation.id == evaluation_id).first()
                 if not evaluation:
@@ -203,6 +229,7 @@ class MLOpsScoreController:
         """Delete a platform evaluation."""
         with self.get_session() as session:
             try:
+                session = self._ensure_healthy_session(session)
                 evaluation = session.query(PlatformEvaluation).filter(
                     PlatformEvaluation.id == evaluation_id).first()
                 if evaluation:
@@ -220,6 +247,7 @@ class MLOpsScoreController:
     def get_evaluations_by_evaluator(self, evaluator_id: str) -> List[MLOpsPlatformEvaluation]:
         """Get all evaluations by a specific evaluator."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             evaluations = session.query(PlatformEvaluation).filter(
                 PlatformEvaluation.evaluator_id == evaluator_id).all()
             return [self._convert_to_model(eval) for eval in evaluations]
@@ -227,6 +255,7 @@ class MLOpsScoreController:
     def get_platform_score_history(self, platform_id: int) -> List[Dict[str, Any]]:
         """Get score history for a platform over time."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             evaluations = session.query(PlatformEvaluation).filter(
                 PlatformEvaluation.platform_id == platform_id
             ).order_by(PlatformEvaluation.evaluation_date.asc()).all()
@@ -244,6 +273,7 @@ class MLOpsScoreController:
     def get_top_platforms_by_score(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get top platforms by overall score."""
         with self.get_session() as session:
+            session = self._ensure_healthy_session(session)
             # Get latest evaluation for each platform
             latest_evaluations = {}
             platform_evaluations = session.query(PlatformEvaluation).order_by(

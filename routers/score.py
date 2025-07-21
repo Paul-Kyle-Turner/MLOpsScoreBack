@@ -86,7 +86,8 @@ async def get_evaluations_by_evaluator(evaluator_id: str) -> List[MLOpsPlatformE
 
 @router.get("/top-platforms", summary="Get top platforms by score")
 async def get_top_platforms(
-    limit: int = Query(10, ge=1, le=50, description="Number of top platforms to return")
+    limit: int = Query(
+        10, ge=1, le=50, description="Number of top platforms to return")
 ) -> List[Dict[str, Any]]:
     """Get top platforms ranked by their overall scores."""
     try:
