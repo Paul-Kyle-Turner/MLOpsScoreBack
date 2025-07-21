@@ -23,12 +23,12 @@ async def get_all_platforms() -> List[PlatformInformation]:
 
 @router.post("/create", tags=["platforms", "create"], summary="Create a new platform")
 async def create_platform(platform: PlatformInformation) -> PlatformInformation:
-    return controller.create_platform(platform)
+    return await controller.create_platform(platform)
 
 
 @router.get("/exists/{platform_name}", tags=["platforms", "exists"], summary="Check if platform exists")
 async def platform_exists(platform_name: str) -> List[PlatformInformation]:
-    exists = controller.search_platforms_by_name(platform_name)
+    exists = await controller.search_platforms_with_pinecone(platform_name)
     if exists:
         return exists
     return []
@@ -56,7 +56,7 @@ async def paginate_platforms(paginate: PaginateRequest) -> List[PlatformInformat
 
 @router.post("/search", tags=["platforms", "search"], summary="Search platforms by name")
 async def search_platforms(search_query: SearchRequest) -> List[PlatformInformation]:
-    platforms = controller.search_platforms_by_name(search_query.search_query)
+    platforms = await controller.search_platforms_with_pinecone(search_query.search_query)
     if not platforms:
         return []
     return platforms
