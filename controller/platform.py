@@ -21,7 +21,7 @@ from sql_model.platforms import (
     PricingModel,
 )
 
-from pinecone import PineconeAsyncio
+from pinecone import PineconeAsyncio as Pinecone
 
 from model.platform import (
     PlatformInformation as PlatformInformationModel,
@@ -38,6 +38,10 @@ from model.platform import (
 )
 
 from settings import SETTINGS
+
+# Initialize Pinecone client
+pc = Pinecone(api_key=SETTINGS.pinecone_api_key)
+index = pc.IndexAsyncio(host=SETTINGS.pinecone_index_hostname)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -72,6 +76,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
 
         # Convert networking capabilities
         networking = NetworkingCapabilitiesModel(
+            id=platform.network_capabilities.id if platform.network_capabilities else None,
             bandwidth_gbps=platform.network_capabilities.bandwidth_gbps if platform.network_capabilities else None,
             network_type=platform.network_capabilities.network_type if platform.network_capabilities else None,
             interconnect_technology=platform.network_capabilities.interconnect_technology if platform.network_capabilities else None,
@@ -84,6 +89,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
 
         # Convert security features
         security_features = SecurityFeaturesModel(
+            id=platform.security_features.id if platform.security_features else None,
             encryption_at_rest=platform.security_features.encryption_at_rest if platform.security_features else False,
             encryption_in_transit=platform.security_features.encryption_in_transit if platform.security_features else False,
             key_management=platform.security_features.key_management if platform.security_features else False,
@@ -99,6 +105,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
         regions = []
         for region in platform.geographic_regions:
             region_data = GeographicRegionModel(
+                id=region.id if region else None,
                 region_name=region.region_name,
                 region_code=region.region_code,
                 country_code=region.country,  # Note: mapping 'country' to 'country_code'
@@ -117,6 +124,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
             for pricing in platform.pricing_models:
                 if pricing.compute_instance_id == platform.id:  # This links to platform due to schema design
                     pricing_model = PricingModelModel(
+                        id=pricing.id if pricing else None,
                         pricing_type=pricing.pricing_type,
                         price_per_hour=pricing.price_per_hour,
                         price_per_month=pricing.price_per_month,
@@ -126,6 +134,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
                     pricing_models.append(pricing_model)
 
             instance_data = ComputeInstanceModel(
+                id=instance.id if instance else None,
                 instance_name=instance.instance_name,
                 instance_family=instance.instance_family,
                 vcpus=instance.vcpus,
@@ -150,6 +159,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
         compliance_certifications = []
         for cert in platform.compliance_certifications:
             cert_data = ComplianceCertificationModel(
+                id=cert.id if cert else None,
                 certification_name=cert.certification_name,
                 status=ComplianceStatus.CERTIFIED,  # Default status since not in SQL model
                 certification_date=cert.certification_date,
@@ -163,6 +173,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
         proprietary_software = []
         for software in platform.proprietary_software:
             software_data = ProprietarySoftwareModel(
+                id=software.id if software else None,
                 software_name=software.software_name,
                 software_type=software.software_type,
                 description=software.description,
@@ -180,6 +191,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
         proprietary_hardware = []
         for hardware in platform.proprietary_hardware:
             hardware_data = ProprietaryHardwareModel(
+                id=hardware.id if hardware else None,
                 hardware_name=hardware.hardware_name,
                 hardware_type=hardware.hardware_type,
                 description=hardware.description,
@@ -199,6 +211,7 @@ def convert_sql_to_platform_model(platform: PlatformInformation) -> PlatformInfo
         support_tiers = []
         for tier in platform.support_tiers:
             tier_data = SupportTierModel(
+                id=tier.id if tier else None,
                 tier_name=tier.tier_name,
                 average_response_time=tier.average_response_time,
                 channels=tier.channels or [],
@@ -252,7 +265,7 @@ class MLOpsPlatformController:
         return session
 
     # Platform Information CRUD operations
-    def create_platform(self, platform_data: PlatformInformationModel) -> PlatformInformationModel:
+    async def create_platform(self, platform_data: PlatformInformationModel) -> PlatformInformationModel:
         """Create a new platform."""
         with self.get_session() as session:
             try:
@@ -358,10 +371,15 @@ class MLOpsPlatformController:
                 session.commit()
                 session.refresh(platform)
                 logger.info(f"Created platform with ID: {platform.id}")
-                
+
                 platform_model = convert_sql_to_platform_model(platform)
 
-
+                # Add platform to Pinecone
+                try:
+                    await self.add_platform_to_pinecone(platform_model)
+                except Exception as e:
+                    logger.warning(f"Failed to add platform to Pinecone: {e}")
+                    # Don't fail the entire operation if Pinecone fails
 
                 return platform_model
             except Exception as e:
@@ -399,7 +417,7 @@ class MLOpsPlatformController:
                 convert_sql_to_platform_model(platform) for platform in session.query(PlatformInformation).offset(offset).limit(limit).all()
             ]
 
-    def update_platform(self, platform_id: int, update_data: Dict[str, Any]) -> Optional[PlatformInformationModel]:
+    async def update_platform(self, platform_id: int, update_data: Dict[str, Any]) -> Optional[PlatformInformationModel]:
         """Update a platform."""
         with self.get_session() as session:
             try:
@@ -413,14 +431,25 @@ class MLOpsPlatformController:
                     session.commit()
                     session.refresh(platform)
                     logger.info(f"Updated platform with ID: {platform_id}")
-                    return convert_sql_to_platform_model(platform)
+
+                    platform_model = convert_sql_to_platform_model(platform)
+
+                    # Update platform in Pinecone
+                    try:
+                        await self.update_platform_in_pinecone(platform_model)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to update platform in Pinecone: {e}")
+                        # Don't fail the entire operation if Pinecone fails
+
+                    return platform_model
                 return None
             except Exception as e:
                 session.rollback()
                 logger.error(f"Error updating platform: {e}")
                 raise
 
-    def delete_platform(self, platform_id: int) -> bool:
+    async def delete_platform(self, platform_id: int) -> bool:
         """Delete a platform."""
         with self.get_session() as session:
             try:
@@ -431,6 +460,15 @@ class MLOpsPlatformController:
                     session.delete(platform)
                     session.commit()
                     logger.info(f"Deleted platform with ID: {platform_id}")
+
+                    # Delete platform from Pinecone
+                    try:
+                        await self.delete_platform_from_pinecone(platform_id)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to delete platform from Pinecone: {e}")
+                        # Don't fail the entire operation if Pinecone fails
+
                     return True
                 return False
             except Exception as e:
@@ -688,15 +726,97 @@ class MLOpsPlatformController:
     async def add_platform_to_pinecone(self, platform: PlatformInformationModel) -> None:
         """Add a platform record to Pinecone."""
         try:
-            # Convert the platform model to a dictionary
-            platform_dict = platform.model_dump()
-            # Add the platform ID as the unique identifier
-            platform_dict['id'] = str(platform.id)
+            # Convert the platform model to JSON string
+            platform_json = platform.model_dump_json()
+            platform_data = platform.model_dump()
 
-            # Upsert the record into Pinecone
-            await index.upsert(vectors=[platform_dict])
-            logger.info(f"Platform {platform.platform_name} added to Pinecone index.")
+            # Create the record in the required format
+            record = {
+                "_id": str(platform.id),
+                "data": platform_json,
+                **platform_data
+            }
+
+            # Upsert the record into Pinecone using the platforms namespace
+            await index.upsert_records(
+                records=[record],
+                namespace=SETTINGS.pinecone_platform_namespace
+            )
+            logger.info(
+                f"Platform {platform.platform_name} added to Pinecone index.")
         except Exception as e:
             logger.error(f"Error adding platform to Pinecone: {e}")
             raise
 
+    async def update_platform_in_pinecone(self, platform: PlatformInformationModel) -> None:
+        """Update a platform record in Pinecone."""
+        try:
+            # Convert the platform model to JSON string
+            platform_json = platform.model_dump_json()
+            platform_data = platform.model_dump()
+
+            # Create the record in the required format
+            record = {
+                "_id": str(platform.id),
+                "data": platform_json,
+                **platform_data
+            }
+
+            # Upsert the record into Pinecone using the platforms namespace
+            await index.upsert_records(
+                records=[record],
+                namespace=SETTINGS.pinecone_platform_namespace
+            )
+            logger.info(
+                f"Platform {platform.platform_name} updated in Pinecone index.")
+        except Exception as e:
+            logger.error(f"Error updating platform in Pinecone: {e}")
+            raise
+
+    async def delete_platform_from_pinecone(self, platform_id: int) -> None:
+        """Delete a platform record from Pinecone."""
+        try:
+            # Delete the record from Pinecone using the platforms namespace
+            await index.delete(
+                ids=[str(platform_id)],
+                namespace=SETTINGS.pinecone_platform_namespace
+            )
+            logger.info(
+                f"Platform with ID {platform_id} deleted from Pinecone index.")
+        except Exception as e:
+            logger.error(f"Error deleting platform from Pinecone: {e}")
+            raise
+
+    async def sync_all_platforms_to_pinecone(self, limit: int = 100, offset: int = 0) -> None:
+        """Sync all platforms from database to Pinecone."""
+        try:
+            platforms = self.get_all_platforms(limit=limit, offset=offset)
+            records = []
+
+            for platform in platforms:
+                # Convert the platform model to JSON string
+                platform_json = platform.model_dump_json()
+                platform_data = platform.model_dump()
+
+                # Create the record in the required format
+                record = {
+                    "_id": str(platform.id),
+                    "data": platform_json,
+                    **platform_data
+                }
+                records.append(record)
+
+            if records:
+                # Batch upsert records to Pinecone
+                await index.upsert_records(
+                    records=records,
+                    namespace=SETTINGS.pinecone_platform_namespace
+                )
+                logger.info(
+                    f"Synced {len(records)} platforms to Pinecone index.")
+            else:
+                logger.info("No platforms found to sync to Pinecone.")
+
+        except Exception as e:
+            logger.error(f"Error syncing platforms to Pinecone: {e}")
+            raise
