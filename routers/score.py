@@ -1,8 +1,9 @@
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime
+from typing import Annotated, List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from controller.scores import MLOpsScoreController
+from login.slack import SlackAuthenticationResponse, verify_slack_code
 from model.score import MLOpsPlatformEvaluation
 from settings import SETTINGS
 
@@ -112,14 +113,27 @@ async def get_evaluation(evaluation_id: int) -> MLOpsPlatformEvaluation:
 
 
 @router.post("/{platform_id}", summary="Create a new platform evaluation")
-async def create_evaluation(platform_id: int, evaluation: MLOpsPlatformEvaluation) -> MLOpsPlatformEvaluation:
+async def create_evaluation(
+    platform_id: int,
+    evaluation: MLOpsPlatformEvaluation,
+    slack: Annotated[SlackAuthenticationResponse | None, Depends(
+        verify_slack_code
+    )]
+) -> MLOpsPlatformEvaluation:
     """Create a new platform evaluation with all scores."""
+    if slack is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Slack authentication failed, not a valid user or team."
+        )
+
     try:
         # Set evaluation date if not provided
         if not evaluation.evaluation_date:
             evaluation.evaluation_date = datetime.now()
 
-        created_evaluation = controller.create_platform_evaluation(platform_id,evaluation)
+        created_evaluation = controller.create_platform_evaluation(
+            platform_id, evaluation)
         return created_evaluation
     except Exception as e:
         raise HTTPException(
@@ -129,9 +143,18 @@ async def create_evaluation(platform_id: int, evaluation: MLOpsPlatformEvaluatio
 @router.post("/update/{evaluation_id}", summary="Update an existing evaluation")
 async def update_evaluation(
     evaluation_id: int,
-    evaluation: MLOpsPlatformEvaluation
+    evaluation: MLOpsPlatformEvaluation,
+    slack: Annotated[SlackAuthenticationResponse | None, Depends(
+        verify_slack_code
+    )]
 ) -> MLOpsPlatformEvaluation:
     """Update an existing platform evaluation."""
+    if slack is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Slack authentication failed, not a valid user or team."
+        )
+
     try:
         updated_evaluation = controller.update_platform_evaluation(
             evaluation_id, evaluation)
@@ -144,8 +167,19 @@ async def update_evaluation(
 
 
 @router.delete("/{evaluation_id}", summary="Delete an evaluation")
-async def delete_evaluation(evaluation_id: int) -> Dict[str, str]:
+async def delete_evaluation(
+    evaluation_id: int,
+    slack: Annotated[SlackAuthenticationResponse | None, Depends(
+        verify_slack_code
+    )]
+) -> Dict[str, str]:
     """Delete a platform evaluation."""
+    if slack is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Slack authentication failed, not a valid user or team."
+        )
+
     try:
         success = controller.delete_platform_evaluation(evaluation_id)
         if not success:
