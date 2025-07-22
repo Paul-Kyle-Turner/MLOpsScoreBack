@@ -41,7 +41,10 @@ async def oauth() -> JSONResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create state for OAuth"
         )
-    url = authorization_url_generator.generate(state=state.state)
+    url = authorization_url_generator.generate(
+        state=state.state,
+        team=SETTINGS.slack_team_id
+    )
     return JSONResponse(
         {
             "redirect_url": url,
@@ -109,7 +112,10 @@ async def login(
     # Verify the token with Slack
     try:
         # Use the access token to get user info
-        user_client = AsyncWebClient(token=slack_token)
+        user_client = AsyncWebClient(
+            token=slack_token,
+            team_id=SETTINGS.slack_team_id
+        )
         user_info = await user_client.openid_connect_userInfo()
 
         if not user_info.get("ok"):
