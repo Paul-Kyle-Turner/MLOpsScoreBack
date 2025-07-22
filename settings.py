@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # Define your settings here
     app_name: str = "MLOps Community Platform Score"
+    base_domain: str = "https://localhost:8000"
     version: str = "1.0.0"
 
     # NEON database settings
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     slack_team_name: str = "MyselfInc"
 
     slack_oauth_redirect_url: str = "https://localhost:8000/v1/slack/oauth_redirect"
+    slack_oauth_redirect_home_url: str = "https://localhost:5173/dashboard"
 
     # Pinecone settings
     pinecone_api_key: str

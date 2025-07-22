@@ -2,7 +2,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from slack_sdk.oauth import AuthorizeUrlGenerator
 from slack_sdk.web.async_client import AsyncWebClient
@@ -22,7 +22,7 @@ authorization_url_generator = AuthorizeUrlGenerator(
     client_id=SETTINGS.slack_client_id,
     redirect_uri=SETTINGS.slack_oauth_redirect_url,
     scopes=[],
-    user_scopes=["identity.basic"],
+    user_scopes=["identity.basic", 'openid'],
 )
 
 state_store = StateController(SETTINGS.pg_connection_string)
@@ -84,8 +84,23 @@ async def oauth_callback(code: str, state: str):
                     "metadata": {**user_info_response.data},  # type: ignore
                 }
                 print(f"Final response prepared: {res}")
-                response = JSONResponse(content=res)
-                response.headers["Authorization"] = f"Bearer {access_token}"
+                if access_token is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Access token is missing in the response"
+                    )
+
+                response = RedirectResponse(
+                    url=SETTINGS.slack_oauth_redirect_home_url
+                )
+                response.set_cookie(
+                    key="X-Slack-Code",
+                    value=access_token,
+                    httponly=True,
+                    secure=True,
+                    samesite="lax",
+                    domain=SETTINGS.base_domain
+                )
                 return response
 
             except Exception as e:
@@ -103,7 +118,7 @@ async def oauth_callback(code: str, state: str):
                             detail="Invalid authorization code")
 
 
-@router.get("/login")
+@router.get("/authenticated")
 async def login(
     slack: Annotated[SlackAuthenticationResponse | None, Depends(
         verify_slack_code

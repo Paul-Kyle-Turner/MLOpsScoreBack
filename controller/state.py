@@ -77,6 +77,7 @@ class StateController:
     def consume(self, state: str) -> Optional[State]:
         """Consume a state entry by ID (retrieve and delete)."""
         try:
+
             with self.get_session() as session:
                 session = self._ensure_healthy_session(session)
 

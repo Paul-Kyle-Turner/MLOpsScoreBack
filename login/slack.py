@@ -1,7 +1,7 @@
 
 from typing import Annotated
 
-from fastapi import Header
+from fastapi import Cookie, Header
 
 from pydantic import AliasChoices, BaseModel
 
@@ -35,18 +35,25 @@ class SlackAuthenticationResponse(BaseModel):
 
 
 async def verify_slack_code(
-        slack_header: Annotated[AuthenticationHeader, Header()]
+        slack_code: Annotated[str | None, Cookie(
+            validation_alias=AliasChoices(
+                "X-Slack-Code",
+                "x-slack-code",
+                "slack_code",
+                "slack-code",
+            )  # type: ignore
+        )]
 ) -> bool:
 
-    if not slack_header.slack_code:
+    if not slack_code:
         return False
 
-    print(slack_header.slack_code)
+    print(slack_code)
 
     response = client.oauth_v2_access(
         client_id=SETTINGS.slack_client_id,
         client_secret=SETTINGS.slack_client_secret,
-        code=slack_header.slack_code
+        code=slack_code
     ),
 
     print(response)
