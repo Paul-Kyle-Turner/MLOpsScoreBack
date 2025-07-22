@@ -39,9 +39,18 @@ from sql_model.util.convert import convert_sql_to_platform_model
 from settings import SETTINGS
 
 
-# Initialize Pinecone client
-pc = Pinecone(api_key=SETTINGS.pinecone_api_key)
-index = pc.IndexAsyncio(host=SETTINGS.pinecone_index_hostname)
+# Global variables for lazy initialization
+_pc = None
+_index = None
+
+
+def get_pinecone_index():
+    """Get Pinecone index with lazy initialization"""
+    global _pc, _index
+    if _index is None:
+        _pc = Pinecone(api_key=SETTINGS.pinecone_api_key)
+        _index = _pc.IndexAsyncio(host=SETTINGS.pinecone_index_hostname)
+    return _index
 
 
 logging.basicConfig(level=logging.INFO)
@@ -557,7 +566,7 @@ class MLOpsPlatformController:
             }
 
             # Upsert the record into Pinecone using the platforms namespace
-            await index.upsert_records(
+            await get_pinecone_index().upsert_records(
                 records=[record],
                 namespace=SETTINGS.pinecone_platform_namespace
             )
@@ -584,7 +593,7 @@ class MLOpsPlatformController:
             }
 
             # Upsert the record into Pinecone using the platforms namespace
-            await index.upsert_records(
+            await get_pinecone_index().upsert_records(
                 records=[record],
                 namespace=SETTINGS.pinecone_platform_namespace
             )
@@ -598,7 +607,7 @@ class MLOpsPlatformController:
         """Delete a platform record from Pinecone."""
         try:
             # Delete the record from Pinecone using the platforms namespace
-            await index.delete(
+            await get_pinecone_index().delete(
                 ids=[str(platform_id)],
                 namespace=SETTINGS.pinecone_platform_namespace
             )
@@ -631,7 +640,7 @@ class MLOpsPlatformController:
 
             if records:
                 # Batch upsert records to Pinecone
-                await index.upsert_records(
+                await get_pinecone_index().upsert_records(
                     records=records,
                     namespace=SETTINGS.pinecone_platform_namespace
                 )
@@ -648,7 +657,7 @@ class MLOpsPlatformController:
         """Search platforms using Pinecone semantic search and return platform models from database."""
         try:
             # Perform semantic search using Pinecone
-            search_results = await index.search(
+            search_results = await get_pinecone_index().search(
                 query={
                     "inputs": {"text": query},
                     "top_k": top_k
