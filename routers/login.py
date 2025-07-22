@@ -84,16 +84,13 @@ async def oauth_callback(code: str, state: str):
                 return response
 
             except Exception as e:
-                print(f"Exception occurred during token exchange: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e}")
         else:
-            print("Failed to consume state - authorization code has expired")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail="Authorization code has expired")
 
     else:
-        print("Invalid authorization code received")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Invalid authorization code")
 
@@ -144,7 +141,7 @@ async def get_user(
 
     if slack is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Slack authentication failed, not a valid user or team."
         )
 

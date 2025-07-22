@@ -1,11 +1,12 @@
 
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated, List
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from controller.platform import (
     MLOpsPlatformController
 )
 
+from login.slack import SlackAuthenticationResponse, verify_slack_code
 from model.paginate import PaginateRequest
 from model.platform import PlatformInformation
 from model.search import SearchRequest
@@ -22,7 +23,18 @@ async def get_all_platforms() -> List[PlatformInformation]:
 
 
 @router.post("/create", tags=["platforms", "create"], summary="Create a new platform")
-async def create_platform(platform: PlatformInformation) -> PlatformInformation:
+async def create_platform(
+    platform: PlatformInformation,
+    slack: Annotated[SlackAuthenticationResponse | None, Depends(
+        verify_slack_code
+    )]
+) -> PlatformInformation:
+    if slack is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Slack authentication failed, not a valid user or team."
+        )
+
     return await controller.create_platform(platform)
 
 
@@ -65,7 +77,6 @@ async def paginate_platforms(paginate: PaginateRequest) -> List[PlatformInformat
 @router.post("/search", tags=["platforms", "search"], summary="Search platforms by name")
 async def search_platforms(search_query: SearchRequest) -> List[PlatformInformation]:
     platforms = await controller.search_platforms_with_pinecone(search_query.search_query)
-    print(f"Search results: {platforms}")
 
     if not platforms:
         return []
