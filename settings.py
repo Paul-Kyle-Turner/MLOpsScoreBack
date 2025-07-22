@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # Define your settings here
     app_name: str = "MLOps Community Platform Score"
-    base_domain: str = "https://localhost:8000"
+    base_domain: str = "localhost:8000"
     version: str = "1.0.0"
 
     # NEON database settings
