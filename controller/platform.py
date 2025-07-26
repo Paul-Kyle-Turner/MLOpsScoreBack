@@ -2,9 +2,8 @@ from datetime import datetime
 import logging
 from typing import List, Optional, Dict, Any
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import SQLAlchemyError, DisconnectionError
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 
 from sql_model.platforms import (
@@ -37,6 +36,7 @@ from model.platform import (
 )
 from sql_model.util.convert import convert_sql_to_platform_model
 from settings import SETTINGS
+from .base import BaseController
 
 
 # Global variables for lazy initialization
@@ -53,42 +53,13 @@ def get_pinecone_index():
     return _index
 
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class MLOpsPlatformController:
+class MLOpsPlatformController(BaseController):
     def __init__(self, database_url: str):
         """Initialize the controller with database connection."""
-        self.engine = create_engine(database_url)
-        Base.metadata.create_all(self.engine)
-        self.session_local = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
-        )
-
-    def get_session(self) -> Session:
-        """Get a database session."""
-        return self.session_local()
-
-    def _check_session_health(self, session: Session) -> bool:
-        """Check if the database session is healthy."""
-        try:
-            # Simple query to test connection
-            session.execute(text("SELECT 1"))
-            return True
-        except (SQLAlchemyError, DisconnectionError) as e:
-            logger.error(f"Session health check failed: {e}")
-            return False
-
-    def _ensure_healthy_session(self, session: Session) -> Session:
-        """Ensure we have a healthy session, create new one if needed."""
-        if not self._check_session_health(session):
-            logger.warning("Session is unhealthy, creating new session")
-            session.close()
-            return self.get_session()
-        return session
+        super().__init__(database_url, Base.metadata)
 
     # Platform Information CRUD operations
     async def create_platform(self, platform_data: PlatformInformationModel) -> PlatformInformationModel:
@@ -544,10 +515,6 @@ class MLOpsPlatformController:
         with self.get_session() as session:
             session = self._ensure_healthy_session(session)
             return [PricingModelModel.model_validate(pricing) for pricing in session.query(PricingModel).filter(PricingModel.compute_instance_id == platform_id).all()]
-
-    def close(self) -> None:
-        """Close the database connection."""
-        self.engine.dispose()
 
     async def add_platform_to_pinecone(self, platform: PlatformInformationModel) -> None:
         """Add a platform record to Pinecone."""

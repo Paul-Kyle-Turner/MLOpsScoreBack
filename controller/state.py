@@ -2,51 +2,23 @@ import logging
 from typing import List, Optional
 from datetime import datetime
 
-from sqlalchemy import create_engine, text, desc
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import SQLAlchemyError, DisconnectionError
+from sqlalchemy import desc
+from sqlalchemy.exc import SQLAlchemyError
 
 from sql_model.state import Base, State as StateModel
 from model.state import State, StateBase
+from .base import BaseController
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class StateController:
+class StateController(BaseController):
     """Controller for managing application state data."""
 
     def __init__(self, database_url: str, expiration_seconds: int = 300):
         """Initialize the state controller with database connection."""
-        self.engine = create_engine(database_url)
-        Base.metadata.create_all(self.engine)
-        self.session_local = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
-        )
-
+        super().__init__(database_url, Base.metadata)
         self.expiration_seconds = expiration_seconds
-
-    def get_session(self) -> Session:
-        """Get a database session."""
-        return self.session_local()
-
-    def _check_session_health(self, session: Session) -> bool:
-        """Check if the database session is healthy."""
-        try:
-            session.execute(text("SELECT 1"))
-            return True
-        except (SQLAlchemyError, DisconnectionError) as e:
-            logger.warning(f"Database session health check failed: {e}")
-            return False
-
-    def _ensure_healthy_session(self, session: Session) -> Session:
-        """Ensure we have a healthy session, create new one if needed."""
-        if not self._check_session_health(session):
-            session.close()
-            session = self.get_session()
-        return session
 
     def issue(self) -> Optional[State]:
         """Issue a new state entry."""
@@ -155,8 +127,3 @@ class StateController:
             state=getattr(db_state, 'state'),
             created_at=getattr(db_state, 'created_at')
         )
-
-    def close(self) -> None:
-        """Close the database connection."""
-        self.engine.dispose()
-        logger.info("State controller database connection closed")

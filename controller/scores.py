@@ -1,9 +1,8 @@
 import logging
 from typing import List, Optional, Dict, Any
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import SQLAlchemyError, DisconnectionError
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from sql_model.scores import (
     Base,
@@ -34,43 +33,15 @@ from model.score import (
     PerformanceAndReliability as PerformanceAndReliabilityModel,
 )
 
-logging.basicConfig(level=logging.INFO)
+from .base import BaseController
+
 logger = logging.getLogger(__name__)
 
 
-class MLOpsScoreController:
+class MLOpsScoreController(BaseController):
     def __init__(self, database_url: str):
         """Initialize the scores controller with database connection."""
-        self.engine = create_engine(database_url)
-        Base.metadata.create_all(self.engine)
-        self.session_local = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
-        )
-
-    def get_session(self) -> Session:
-        """Get a database session."""
-        return self.session_local()
-
-    def _check_session_health(self, session: Session) -> bool:
-        """Check if the database session is healthy."""
-        try:
-            # Simple query to test connection
-            session.execute(text("SELECT 1"))
-            return True
-        except (SQLAlchemyError, DisconnectionError) as e:
-            logger.error(f"Session health check failed: {e}")
-            return False
-
-    def _ensure_healthy_session(self, session: Session) -> Session:
-        """Ensure we have a healthy session, create new one if needed."""
-        if not self._check_session_health(session):
-            logger.warning("Session is unhealthy, creating new session")
-            session.close()
-            return self.get_session()
-        return session
-
+        super().__init__(database_url, Base.metadata)
     # Platform Evaluation CRUD operations
     def create_platform_evaluation(self, platform_id: int, evaluation_data: MLOpsPlatformEvaluation) -> MLOpsPlatformEvaluation:
         """Create a complete platform evaluation with all scores."""
